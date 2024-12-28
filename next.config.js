@@ -3,10 +3,9 @@
  * for Docker builds.
  */
 // next.config.js
+import { env } from "./src/env.js";
+
 /** @type {import("next").NextConfig} */
 const config = {};
 
-// Import env validation
-require("./src/env.js");
-
-module.exports = config;
+export default config;
