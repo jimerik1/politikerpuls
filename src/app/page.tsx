@@ -1,6 +1,6 @@
 import { auth } from "~/server/auth";
 import { WebPage } from "./_components/WebPage";
-import { AuthorizedDashboard } from "./_components/AuthorizedDashboard";
+import { AuthorizedDashboard } from "./_components/authorized/AuthorizedDashboard";
 import { HydrateClient } from "~/trpc/server";
 
 export default async function Home() {

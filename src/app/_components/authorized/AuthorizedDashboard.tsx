@@ -2,7 +2,7 @@
 
 import { type Session } from "next-auth";
 import Link from "next/link";
-import { LatestPost } from "./post";
+import { LatestPost } from "../post";
 
 interface AuthorizedDashboardProps {
   session: Session;
