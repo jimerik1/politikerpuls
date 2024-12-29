@@ -58,7 +58,7 @@ const DashboardContent = ({ session }: DashboardContentProps) => {
 
       {/* Recent Activity Table */}
       <div className="rounded-lg bg-white p-6 shadow">
-        <h3 className="mb-4 text-lg font-medium text-gray-900">Recent Activity:</h3>
+        <h3 className="mb-4 text-lg font-medium text-gray-900">Recent Activity(ies):</h3>
         <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-gray-200">
             <thead>
