@@ -104,9 +104,9 @@ const DashboardLayout = ({ session, children }: DashboardLayoutProps) => {
         {/* Top Navigation */}
         <header className="bg-white p-4 shadow">
           <div className="flex items-center justify-between">
-            <h2 className="text-xl font-semibold text-gray-800">Dashboard</h2>
+            <h2 className="text-xl font-semibold text-gray-800">Min Side</h2>
             <div className="flex items-center space-x-4">
-              <span className="text-gray-600">Welcome, {session.user?.name}</span>
+              <span className="text-gray-600">Velkommen, {session.user?.name}</span>
             </div>
           </div>
         </header>
