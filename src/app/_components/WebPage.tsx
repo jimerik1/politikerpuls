@@ -6,6 +6,7 @@ import { Hero } from "./landing/Hero";
 import { Features } from "./landing/Features";
 import { Pricing } from "./landing/Pricing";
 import { AIInfo } from "./landing/AIInfo";
+import { Footer } from "./landing/Footer";
 
 export const WebPage: FC = () => {
   return (
@@ -13,6 +14,7 @@ export const WebPage: FC = () => {
       <Header />
       <Features />
       <AIInfo />
+      <Footer />
     </div>
   );
 };
