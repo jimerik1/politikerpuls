@@ -12,6 +12,7 @@ const config = {
     "plugin:@typescript-eslint/recommended-type-checked",
     "plugin:@typescript-eslint/stylistic-type-checked"
   ],
+  "ignorePatterns": ["node_modules", "src/app/_components/tailwindcomponents/*"],
   "rules": {
     "@typescript-eslint/array-type": "off",
     "@typescript-eslint/consistent-type-definitions": "off",
@@ -27,6 +28,7 @@ const config = {
       {
         "argsIgnorePattern": "^_"
       }
+      
     ],
     "@typescript-eslint/require-await": "off",
     "@typescript-eslint/no-misused-promises": [
