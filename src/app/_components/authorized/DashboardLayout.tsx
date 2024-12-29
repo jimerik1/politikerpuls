@@ -6,6 +6,9 @@ import {
   User as UserCircleIcon,
   Settings as SettingsIcon,
   LogOut as LogOutIcon,
+  Newspaper as Newspaper,
+  Trophy as Trophy,
+  Tag as Tag
 } from "lucide-react";
 
 interface DashboardLayoutProps {
@@ -19,32 +22,56 @@ const DashboardLayout = ({ session, children }: DashboardLayoutProps) => {
       {/* Sidebar */}
       <div className="hidden w-64 flex-none flex-col bg-white p-4 shadow-lg lg:flex">
         <div className="mb-8">
-          <h1 className="text-2xl font-bold text-purple-600">PolitikerPuls</h1>
+          <h1 className="text-2xl font-bold text-purple-600">Politikerpuls</h1>
         </div>
         
         <nav className="flex-1 space-y-2">
           <Link 
-            href="/dashboard" 
+            href="/partier" 
             className="flex items-center rounded-lg p-2 text-gray-600 hover:bg-gray-100"
           >
             <HomeIcon className="mr-3 h-5 w-5" />
-            <span>Dashboard</span>
+            <span>Partier</span>
           </Link>
           
           <Link 
-            href="/profile" 
+            href="/politikere" 
             className="flex items-center rounded-lg p-2 text-gray-600 hover:bg-gray-100"
           >
             <UserCircleIcon className="mr-3 h-5 w-5" />
-            <span>Profile</span>
+            <span>Politikere</span>
+          </Link>
+
+          <Link 
+            href="/saker" 
+            className="flex items-center rounded-lg p-2 text-gray-600 hover:bg-gray-100"
+          >
+            <Newspaper className="mr-3 h-5 w-5" />
+            <span>Saker i stortinget</span>
+          </Link>
+
+          <Link 
+            href="/politikerpuls" 
+            className="flex items-center rounded-lg p-2 text-gray-600 hover:bg-gray-100"
+          >
+            <Tag className="mr-3 h-5 w-5" />
+            <span>Politikerpuls</span>
+          </Link>
+
+          <Link 
+            href="/ledertavler" 
+            className="flex items-center rounded-lg p-2 text-gray-600 hover:bg-gray-100"
+          >
+            <Trophy className="mr-3 h-5 w-5" />
+            <span>Ledertavler</span>
           </Link>
           
           <Link 
-            href="/settings" 
+            href="/innstillinger" 
             className="flex items-center rounded-lg p-2 text-gray-600 hover:bg-gray-100"
           >
             <SettingsIcon className="mr-3 h-5 w-5" />
-            <span>Settings</span>
+            <span>Innstillinger</span>
           </Link>
         </nav>
 
