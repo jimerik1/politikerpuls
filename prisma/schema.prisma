@@ -33,12 +33,12 @@ model Account {
     type                     String
     provider                 String
     providerAccountId        String
-    refresh_token            String? // @db.Text
-    access_token             String? // @db.Text
+    refresh_token            String?  @db.Text
+    access_token             String?  @db.Text
     expires_at               Int?
     token_type               String?
     scope                    String?
-    id_token                 String? // @db.Text
+    id_token                 String?  @db.Text
     session_state            String?
     user                     User    @relation(fields: [userId], references: [id], onDelete: Cascade)
     refresh_token_expires_in Int?
@@ -71,4 +71,216 @@ model VerificationToken {
     expires    DateTime
 
     @@unique([identifier, token])
+}
+
+// Enhanced models for Stortinget data
+model Politician {
+    id                String   @id // Using Stortinget's ID
+    firstName         String
+    lastName          String
+    email            String?
+    phone            String?
+    image            String?
+    dateOfBirth      DateTime?
+    attendanceRate   Float?    // Oppmøteprosent
+    aiComment        String?   @db.Text
+    truthIndex       Float?    // Sannferdig-index
+    voteIndex        Float?    // Stemme-index
+    timeUsageComment String?   @db.Text
+    
+    party            Party     @relation(fields: [partyId], references: [id])
+    partyId          String
+    
+    roles            PoliticianRole[]
+    voteRecords      VoteRecord[]    // Individual voting records
+    committeeRoles   CommitteeMembership[]
+    
+    createdAt        DateTime  @default(now())
+    updatedAt        DateTime  @updatedAt
+
+    @@index([firstName, lastName])
+}
+
+model PoliticianRole {
+    id          String    @id @default(cuid())
+    title       String
+    description String?   @db.Text
+    startDate   DateTime
+    endDate     DateTime?
+    isActive    Boolean   @default(true)
+    
+    politician  Politician @relation(fields: [politicianId], references: [id])
+    politicianId String
+
+    createdAt   DateTime  @default(now())
+    updatedAt   DateTime  @updatedAt
+
+    @@index([startDate, endDate])
+}
+
+model Party {
+    id              String   @id // Using Stortinget's party ID
+    name            String
+    leader          String?
+    logo            String? // URL to logo image
+    ideology        String? @db.Text
+    aiComment       String? @db.Text
+    representatives Int     @default(0)
+    
+    politicians     Politician[]
+    partyVoteStats PartyVoteStats[] // Statistics per vote
+    
+    createdAt       DateTime @default(now())
+    updatedAt       DateTime @updatedAt
+
+    @@index([name])
+}
+
+model Case {
+    id              String   @id // Using Stortinget's case ID
+    shortTitle      String
+    fullTitle       String  @db.Text
+    description     String  @db.Text
+    status          String  // e.g., 'open', 'closed', 'in_progress'
+    reference       String?
+    type            String?
+    sessionId       String  // Parliamentary session ID
+    documentGroup   String?
+    proposedDate    DateTime
+    decidedDate     DateTime?
+    
+    committee       Committee? @relation(fields: [committeeId], references: [id])
+    committeeId     String?
+    
+    votes           Vote[]          // The actual votes held for this case
+    voteRecords     VoteRecord[]    // Individual voting records
+    topics          CaseTopic[]
+    partyVoteStats  PartyVoteStats[] // Statistics per party
+    documents       CaseDocument[]
+    
+    createdAt       DateTime @default(now())
+    updatedAt       DateTime @updatedAt
+
+    @@index([shortTitle])
+    @@index([sessionId])
+    @@index([proposedDate])
+    @@index([status])
+}
+
+model Vote {
+    id              String        @id // Using Stortinget's vote ID
+    caseId          String
+    case            Case          @relation(fields: [caseId], references: [id])
+    votingDate      DateTime
+    topic           String?       @db.Text // What was voted on
+    result          String        // final result: 'accepted', 'rejected'
+    majorityType    String?       // type of majority required
+    description     String?       @db.Text
+    
+    voteRecords     VoteRecord[]  // Individual voting records
+    partyVoteStats  PartyVoteStats[] // Statistics per party
+    
+    createdAt       DateTime      @default(now())
+    updatedAt       DateTime      @updatedAt
+
+    @@index([votingDate])
+    @@index([caseId, votingDate])
+}
+
+model VoteRecord {
+    id           String     @id @default(cuid())
+    voteId       String
+    vote         Vote       @relation(fields: [voteId], references: [id])
+    caseId       String
+    case         Case       @relation(fields: [caseId], references: [id])
+    politicianId String
+    politician   Politician @relation(fields: [politicianId], references: [id])
+    voteValue    String     // 'for', 'mot', 'ikke_tilstede'
+    votedAt      DateTime
+    
+    createdAt    DateTime   @default(now())
+    updatedAt    DateTime   @updatedAt
+
+    @@unique([voteId, politicianId])
+    @@index([voteId, voteValue])
+    @@index([caseId, politicianId])
+    @@index([politicianId, votedAt])
+}
+
+model PartyVoteStats {
+    id          String   @id @default(cuid())
+    voteId      String
+    vote        Vote     @relation(fields: [voteId], references: [id])
+    partyId     String
+    party       Party    @relation(fields: [partyId], references: [id])
+    caseId      String
+    case        Case     @relation(fields: [caseId], references: [id])
+    votesFor    Int      @default(0)
+    votesAgainst Int     @default(0)
+    abstained   Int      @default(0)
+    absent      Int      @default(0)
+    
+    createdAt   DateTime @default(now())
+    updatedAt   DateTime @updatedAt
+
+    @@unique([voteId, partyId])
+    @@index([caseId, partyId])
+}
+
+model Committee {
+    id          String   @id // Using Stortinget's committee ID
+    name        String
+    description String?  @db.Text
+    
+    cases       Case[]
+    members     CommitteeMembership[]
+    
+    createdAt   DateTime @default(now())
+    updatedAt   DateTime @updatedAt
+}
+
+model CommitteeMembership {
+    id           String     @id @default(cuid())
+    committeeId  String
+    committee    Committee  @relation(fields: [committeeId], references: [id])
+    politicianId String
+    politician   Politician @relation(fields: [politicianId], references: [id])
+    role         String?    // e.g., 'chair', 'member'
+    startDate    DateTime
+    endDate      DateTime?
+    
+    createdAt    DateTime  @default(now())
+    updatedAt    DateTime  @updatedAt
+
+    @@unique([committeeId, politicianId, startDate])
+    @@index([startDate, endDate])
+}
+
+model CaseTopic {
+    id          String   @id @default(cuid())
+    name        String
+    isMainTopic Boolean  @default(false)
+    
+    case        Case     @relation(fields: [caseId], references: [id])
+    caseId      String
+    
+    createdAt   DateTime @default(now())
+    updatedAt   DateTime @updatedAt
+
+    @@index([name])
+}
+
+model CaseDocument {
+    id          String   @id @default(cuid())
+    caseId      String
+    case        Case     @relation(fields: [caseId], references: [id])
+    title       String
+    type        String   // e.g., 'proposition', 'report', 'decision'
+    url         String
+    date        DateTime
+    
+    createdAt   DateTime @default(now())
+    updatedAt   DateTime @updatedAt
+
+    @@index([type, date])
 }
