@@ -77,7 +77,10 @@ model VerificationToken {
 model Politician {
     id                String   @id // Using Stortinget's ID
     firstName         String
-    lastName          String
+    lastName          String?
+    stortingsperiode_id String?
+    kjoenn          String?
+    fylke           String?
     email            String?
     phone            String?
     image            String?
