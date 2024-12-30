@@ -146,7 +146,7 @@ export const partyRouter = createTRPCRouter({
         throw new Error("Party not found");
       }
 
-      // Calculate voting statistics
+      // Calculate voting statistics!
       const totalVotes = party.partyVoteStats.length;
       const forVotes = party.partyVoteStats.filter((stat) => stat.votesFor > 0).length;
       const againstVotes = totalVotes - forVotes;
