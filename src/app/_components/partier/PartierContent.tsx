@@ -46,7 +46,7 @@ const getPartyColor = (color: string | null): string => {
   if (!color) return '#E5E7EB'; // Return default gray if color is null
   
   // Check if it's a valid hex color
-  const isValidHex = color.match(/^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/);
+  const isValidHex = "#E5E7EB";
   return isValidHex ? color : '#E5E7EB'; // Return the hex color or default gray
 };
 

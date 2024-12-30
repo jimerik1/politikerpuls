@@ -99,7 +99,7 @@ export default function SakerContent({ session }: SakerContentProps) {
             <div className="inline-flex items-center gap-x-1.5 rounded-l-md bg-indigo-600 px-3 py-2 text-white">
               <CheckIcon aria-hidden="true" className="-ml-0.5 h-5 w-5" />
               <p className="text-sm font-semibold">
-                {selectedType || "Alle typer"}
+                {selectedType ?? "Alle typer"}
               </p>
             </div>
             <ListboxButton className="inline-flex items-center rounded-l-none rounded-r-md bg-indigo-600 p-2 hover:bg-indigo-700">
