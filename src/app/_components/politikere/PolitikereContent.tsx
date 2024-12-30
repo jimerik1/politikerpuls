@@ -4,56 +4,63 @@ import { Dialog, DialogBackdrop, DialogPanel } from "@headlessui/react";
 import { Combobox, ComboboxInput, ComboboxOptions, ComboboxOption } from "@headlessui/react";
 import { XMarkIcon, UsersIcon, MagnifyingGlassIcon } from "@heroicons/react/24/outline";
 import { Drawer, DrawerSection, DrawerList, type DrawerListItem } from "../drawer/Drawer";
+import { api } from "~/trpc/react";
 
-// Types
-interface Politiker {
-  id: string;
-  name: string;
-  parti: string;
-  sannferdigIndex: number;
-  stemmeIndex: number;
-  andreRoller: string[];
-  imageUrl: string;
-  email: string;
-  telefon?: string;
-}
-
-interface PolitikereContentsProps {
-  session: Session;
-}
-
-// Example data
-const politicians: Politiker[] = [
-  {
-    id: "1",
-    name: "Jonas Gahr Støre",
-    parti: "AP",
-    sannferdigIndex: 85,
-    stemmeIndex: 92,
-    andreRoller: ["Statsminister", "Partileder"],
-    imageUrl: "https://api.placeholder.com/256",
-    email: "jonas@example.com",
-    telefon: "123-456-789"
-  },
-  // Add more politicians...
-];
-
-export default function PolitikereContent({ session }: PolitikereContentsProps) {
+// Updated interface to match Prisma schema
+interface Politician {
+    id: string;
+    firstName: string;
+    lastName: string | null;
+    email: string | null;
+    phone: string | null;
+    image: string | null;
+    truthIndex: number | null;
+    voteIndex: number | null;
+    party: {
+      name: string;
+    };
+    roles: Array<{
+      id: string;
+      title: string;
+      description: string | null;
+      isActive: boolean;
+    }>;
+  }
+  
+  interface PaginatedPoliticians {
+    items: Politician[];
+    nextCursor: string | undefined;
+  }
+  
+  interface PolitikereContentProps {
+    session: Session;
+  }
+  
+export default function PolitikereContent({ session }: PolitikereContentProps) {
   // States
   const [query, setQuery] = useState("");
   const [searchOpen, setSearchOpen] = useState(false);
-  const [selectedPolitiker, setSelectedPolitiker] = useState<Politiker | null>(null);
+  const [selectedPolitiker, setSelectedPolitiker] = useState<Politician | null>(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
+  
+  // Fetch politicians using TRPC
+  const { data, isLoading } = api.politician.getAll.useQuery(
+    {
+      limit: 50,
+      cursor: undefined,
+    },
+  );
 
-  // Search filter
-  const filteredPoliticians = query === "" 
-    ? [] 
-    : politicians.filter((person) =>
-        person.name.toLowerCase().includes(query.toLowerCase())
-      );
+  // Search query using TRPC
+  const { data: searchResults } = api.politician.search.useQuery(
+    { query, limit: 10 },
+    { enabled: query.length > 0 }
+  );
 
   // Helper function for index badges
-  const renderIndexBadge = (index: number) => {
+  const renderIndexBadge = (index: number | null) => {
+    if (index === null) return null;
+    
     const color = index >= 80 ? "green" : index >= 60 ? "yellow" : "red";
     
     return (
@@ -66,40 +73,47 @@ export default function PolitikereContent({ session }: PolitikereContentsProps) 
   };
 
   // Drawer content helpers
-  const getDrawerItems = (politiker: Politiker): DrawerListItem[] => [
-    { label: "Parti", value: politiker.parti },
-    { label: "E-post", value: politiker.email },
-    { label: "Telefon", value: politiker.telefon ?? "Ikke tilgjengelig" },
-    { label: "Sannferdig-index", value: `${politiker.sannferdigIndex}%` },
-    { label: "Stemme-index", value: `${politiker.stemmeIndex}%` }
+  const getDrawerItems = (politiker: Politician): DrawerListItem[] => [
+    { label: "Parti", value: politiker.party.name },
+    { label: "E-post", value: politiker.email ?? "Ikke tilgjengelig" },
+    { label: "Telefon", value: politiker.phone ?? "Ikke tilgjengelig" },
+    { label: "Sannferdig-index", value: politiker.truthIndex ? `${politiker.truthIndex}%` : "Ikke tilgjengelig" },
+    { label: "Stemme-index", value: politiker.voteIndex ? `${politiker.voteIndex}%` : "Ikke tilgjengelig" }
   ];
 
-  const DrawerContent = ({ politiker }: { politiker: Politiker }) => (
+  const DrawerContent = ({ politiker }: { politiker: Politician }) => (
     <>
       <DrawerSection title="Oversikt">
         <DrawerList items={getDrawerItems(politiker)} />
       </DrawerSection>
 
-      <DrawerSection title="Profilbilde" className="mt-6">
-        <div className="space-y-4">
-          <img
-            src={politiker.imageUrl}
-            alt={politiker.name}
-            className="w-full rounded-lg object-cover"
-          />
-        </div>
-      </DrawerSection>
+      {politiker.image && (
+        <DrawerSection title="Profilbilde" className="mt-6">
+          <div className="space-y-4">
+            <img
+              src={politiker.image.replace('storrelse=lite', 'storrelse=stort')}
+              alt={`${politiker.firstName} ${politiker.lastName}`}
+              className="w-full rounded-lg object-cover"
+            />
+          </div>
+        </DrawerSection>
+      )}
 
       <DrawerSection title="Roller og verv" className="mt-6">
         <div className="space-y-2">
-          {politiker.andreRoller.map((rolle, index) => (
-            <div
-              key={index}
-              className="rounded-md bg-gray-50 px-3 py-2 text-sm text-gray-700"
-            >
-              {rolle}
-            </div>
-          ))}
+          {politiker.roles
+            .filter(role => role.isActive)
+            .map((role) => (
+              <div
+                key={role.id}
+                className="rounded-md bg-gray-50 px-3 py-2 text-sm text-gray-700"
+              >
+                <div className="font-medium">{role.title}</div>
+                {role.description && (
+                  <div className="mt-1 text-gray-500">{role.description}</div>
+                )}
+              </div>
+            ))}
         </div>
       </DrawerSection>
 
@@ -115,6 +129,14 @@ export default function PolitikereContent({ session }: PolitikereContentsProps) 
       </DrawerSection>
     </>
   );
+
+  if (isLoading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center">
+        <div className="text-lg text-gray-600">Laster politikere...</div>
+      </div>
+    );
+  }
 
   return (
     <div className="relative min-h-screen">
@@ -142,7 +164,6 @@ export default function PolitikereContent({ session }: PolitikereContentsProps) 
 
         {/* Table */}
         <div className="mt-8 rounded-lg bg-white p-6 shadow">
-          <h3 className="mb-4 text-lg font-medium text-gray-900">Politikeroversikt</h3>
           <div className="flow-root">
             <div className="overflow-x-auto">
               <table className="min-w-full divide-y divide-gray-200">
@@ -161,7 +182,7 @@ export default function PolitikereContent({ session }: PolitikereContentsProps) 
                       Stemme-index
                     </th>
                     <th scope="col" className="px-6 py-3.5 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
-                      Andre roller
+                      Roller
                     </th>
                     <th scope="col" className="px-6 py-3.5 text-right text-xs font-medium uppercase tracking-wider text-gray-500">
                       Handlinger
@@ -169,34 +190,39 @@ export default function PolitikereContent({ session }: PolitikereContentsProps) 
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-200">
-                  {politicians.map((person) => (
+                {data?.items.map((person) => (
                     <tr key={person.id} className="hover:bg-gray-50">
                       <td className="whitespace-nowrap py-4 pl-6 pr-3">
                         <div className="flex items-center">
                           <div className="h-10 w-10 flex-shrink-0">
                             <img 
                               className="h-10 w-10 rounded-full object-cover"
-                              src={person.imageUrl} 
-                              alt={`${person.name} bilde`}
+                              src={person.image ?? '/placeholder-avatar.png'} 
+                              alt={`${person.firstName} ${person.lastName} bilde`}
                             />
                           </div>
                           <div className="ml-4">
-                            <div className="font-medium text-gray-900">{person.name}</div>
+                            <div className="font-medium text-gray-900">
+                              {person.firstName} {person.lastName}
+                            </div>
                             <div className="text-sm text-gray-500">{person.email}</div>
                           </div>
                         </div>
                       </td>
                       <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-500">
-                        {person.parti}
+                        {person.party.name}
                       </td>
                       <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-500">
-                        {renderIndexBadge(person.sannferdigIndex)}
+                        {renderIndexBadge(person.truthIndex)}
                       </td>
                       <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-500">
-                        {renderIndexBadge(person.stemmeIndex)}
+                        {renderIndexBadge(person.voteIndex)}
                       </td>
                       <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-500">
-                        {person.andreRoller.join(", ")}
+                        {person.roles
+                          .filter(role => role.isActive)
+                          .map(role => role.title)
+                          .join(", ")}
                       </td>
                       <td className="whitespace-nowrap px-6 py-4 text-right text-sm font-medium">
                         <button
@@ -229,7 +255,7 @@ export default function PolitikereContent({ session }: PolitikereContentsProps) 
         <div className="fixed inset-0 overflow-y-auto p-4 sm:p-6 md:p-20">
           <Dialog.Panel className="mx-auto max-w-3xl divide-y divide-gray-100 overflow-hidden rounded-xl bg-white shadow-2xl">
             <Combobox
-              onChange={(politiker: Politiker) => {
+              onChange={(politiker: Politician) => {
                 setSearchOpen(false);
                 setSelectedPolitiker(politiker);
                 setDrawerOpen(true);
@@ -247,9 +273,9 @@ export default function PolitikereContent({ session }: PolitikereContentsProps) 
                 />
               </div>
 
-              {filteredPoliticians.length > 0 && (
+              {searchResults && searchResults.length > 0 && (
                 <ComboboxOptions className="max-h-72 scroll-py-2 overflow-y-auto py-2 text-sm text-gray-800">
-                  {filteredPoliticians.map((person) => (
+                  {searchResults.map((person) => (
                     <ComboboxOption
                       key={person.id}
                       value={person}
@@ -259,13 +285,13 @@ export default function PolitikereContent({ session }: PolitikereContentsProps) 
                         }`
                       }
                     >
-                      {person.name}
+                      {person.firstName} {person.lastName}
                     </ComboboxOption>
                   ))}
                 </ComboboxOptions>
               )}
 
-              {query && filteredPoliticians.length === 0 && (
+              {query && (!searchResults || searchResults.length === 0) && (
                 <div className="px-6 py-14 text-center text-sm sm:px-14">
                   <UsersIcon
                     className="mx-auto h-6 w-6 text-gray-400"
@@ -283,9 +309,8 @@ export default function PolitikereContent({ session }: PolitikereContentsProps) 
           </Dialog.Panel>
         </div>
       </Dialog>
-
-      {/* Drawer */}
-      <Dialog 
+{/* Drawer */}
+<Dialog 
         open={drawerOpen} 
         onClose={() => setDrawerOpen(false)}
         className="relative z-50"
@@ -312,7 +337,9 @@ export default function PolitikereContent({ session }: PolitikereContentsProps) 
                 <div className="h-full overflow-y-auto p-8">
                   {selectedPolitiker && (
                     <>
-                      <h2 className="mb-4 text-lg font-medium">{selectedPolitiker.name}</h2>
+                      <h2 className="mb-4 text-lg font-medium">
+                        {selectedPolitiker.firstName} {selectedPolitiker.lastName}
+                      </h2>
                       <DrawerContent politiker={selectedPolitiker} />
                     </>
                   )}
