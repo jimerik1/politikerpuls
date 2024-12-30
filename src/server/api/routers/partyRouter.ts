@@ -148,7 +148,7 @@ export const partyRouter = createTRPCRouter({
 
       // Calculate voting statistics
       const totalVotes = party.partyVoteStats.length;
-      const forVotes = party.partyVoteStats.filter(stat => stat.votedFor).length;
+      const forVotes = party.partyVoteStats.filter((stat) => stat.votesFor > 0).length;
       const againstVotes = totalVotes - forVotes;
 
       return {
