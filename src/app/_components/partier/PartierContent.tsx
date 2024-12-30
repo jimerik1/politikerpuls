@@ -4,86 +4,149 @@ import { Dialog, DialogBackdrop, DialogPanel } from "@headlessui/react";
 import { Combobox, ComboboxInput, ComboboxOptions, ComboboxOption } from "@headlessui/react";
 import { XMarkIcon, UsersIcon, MagnifyingGlassIcon } from "@heroicons/react/24/outline";
 import { Drawer, DrawerSection, DrawerList, type DrawerListItem } from "../drawer/Drawer";
+import { api } from "~/trpc/react";
 
-// Types
-interface Parti {
+// Updated interface to match Prisma schema and PartyRouter
+interface Party {
   id: string;
   name: string;
-  leder: string;
-  medlemmer: number;
-  ideologi: string;
-  stortingsRepresentanter: number;
-  imageUrl: string;
+  leader: string | null;
+  logo: string | null;
+  ideology: string | null;
+  aiComment: string | null;
+  representatives: number;
+  politicians: Array<{
+    id: string;
+    firstName: string;
+    lastName: string | null;
+    roles: Array<{
+      id: string;
+      title: string;
+      description: string | null;
+      isActive: boolean;
+      createdAt: Date;
+      updatedAt: Date;
+      startDate: Date;
+      endDate: Date | null;
+      politicianId: string;
+    }>;
+  }>;
+  _count: {
+    politicians: number;
+    partyVoteStats: number;
+  };
 }
 
 interface PartierContentsProps {
   session: Session;
 }
 
-// Example data
-const parties: Parti[] = [
-  {
-    id: "1",
-    name: "Arbeiderpartiet",
-    leder: "Jonas Gahr Støre",
-    medlemmer: 50000,
-    ideologi: "Sosialdemokrati",
-    stortingsRepresentanter: 48,
-    imageUrl: "https://api.placeholder.com/256"
-  },
-  // Add more parties...
-];
+// Helper function to validate hex color or return default
+const getPartyColor = (color: string | null): string => {
+  if (!color) return '#E5E7EB'; // Return default gray if color is null
+  
+  // Check if it's a valid hex color
+  const isValidHex = "#E5E7EB";
+  return isValidHex ? color : '#E5E7EB'; // Return the hex color or default gray
+};
 
 export default function PartiContent({ session }: PartierContentsProps) {
   // States
   const [query, setQuery] = useState("");
   const [searchOpen, setSearchOpen] = useState(false);
-  const [selectedParti, setSelectedParti] = useState<Parti | null>(null);
+  const [selectedParti, setSelectedParti] = useState<Party | null>(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
 
-  // Search filter
-  const filteredParties = query === "" 
-    ? [] 
-    : parties.filter((party) =>
-        party.name.toLowerCase().includes(query.toLowerCase())
-      );
+  // Fetch parties using TRPC
+  const { data, isLoading } = api.party.getAll.useQuery({
+    limit: 50,
+    cursor: undefined,
+  });
+
+  // Search query using TRPC
+  const { data: searchResults } = api.party.search.useQuery(
+    { query, limit: 10 },
+    { enabled: query.length > 0 }
+  );
+
+  // Stats query for selected party
+  const { data: partyStats } = api.party.getStats.useQuery(
+    { id: selectedParti?.id ?? "" },
+    { enabled: !!selectedParti }
+  );
 
   // Drawer content helpers
-  const getDrawerItems = (parti: Parti): DrawerListItem[] => [
-    { label: "Leder", value: parti.leder },
-    { label: "Medlemmer", value: parti.medlemmer.toLocaleString() },
-    { label: "Ideologi", value: parti.ideologi },
-    { label: "Stortingsrepresentanter", value: parti.stortingsRepresentanter.toString() }
+  const getDrawerItems = (party: Party): DrawerListItem[] => [
+    { label: "Leder", value: party.leader ?? "Ikke spesifisert" },
+    { label: "Representanter", value: party.representatives.toString() },
+    { label: "Ideologi", value: party.ideology ?? "Ikke spesifisert" },
+    { label: "Antall stemmer", value: party._count?.partyVoteStats.toString() ?? "0" },
+    ...(partyStats ? [
+      { label: "For-stemmer", value: `${partyStats.recentVotingPattern.forPercentage.toFixed(1)}%` },
+      { label: "Mot-stemmer", value: `${partyStats.recentVotingPattern.againstPercentage.toFixed(1)}%` }
+    ] : [])
   ];
 
-  const DrawerContent = ({ parti }: { parti: Parti }) => (
+  const DrawerContent = ({ party }: { party: Party }) => (
     <>
       <DrawerSection title="Oversikt">
-        <DrawerList items={getDrawerItems(parti)} />
+        <DrawerList items={getDrawerItems(party)} />
       </DrawerSection>
 
-      <DrawerSection title="Partilogo" className="mt-6">
-        <div className="space-y-4">
-          <img
-            src={parti.imageUrl}
-            alt={parti.name}
-            className="w-full rounded-lg object-cover"
-          />
-        </div>
-      </DrawerSection>
+      {party.logo && (
+        <DrawerSection title="Partilogo" className="mt-6">
+          <div className="flex justify-center">
+            <div 
+              className="h-16 w-16 rounded-full border border-gray-200"
+              style={{ backgroundColor: getPartyColor(party.logo) }}
+              title={`${party.name} party color`}
+            />
+          </div>
+        </DrawerSection>
+      )}
 
-      <DrawerSection title="Handlinger" className="mt-6">
-        <div className="flex flex-col gap-2">
-          <button
-            type="button"
-            className="inline-flex items-center justify-center rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
-          >
-            Oppdater informasjon
-          </button>
+      {party.ideology && (
+        <DrawerSection title="Ideologi" className="mt-6">
+          <p className="text-sm text-gray-600">{party.ideology}</p>
+        </DrawerSection>
+      )}
+
+      {party.aiComment && (
+        <DrawerSection title="AI Kommentar" className="mt-6">
+          <p className="text-sm text-gray-600">{party.aiComment}</p>
+        </DrawerSection>
+      )}
+
+      <DrawerSection title="Aktive Representanter" className="mt-6">
+        <div className="space-y-2">
+          {party.politicians.map((politician) => (
+            <div
+              key={politician.id}
+              className="rounded-md bg-gray-50 px-3 py-2 text-sm text-gray-700"
+            >
+              <div className="font-medium">
+                {politician.firstName} {politician.lastName}
+              </div>
+              <div className="mt-1 text-gray-500">
+                {politician.roles
+                  .filter(role => role.isActive)
+                  .map(role => role.title)
+                  .join(", ")}
+              </div>
+            </div>
+          ))}
         </div>
       </DrawerSection>
     </>
   );
+
+  if (isLoading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center">
+        <div className="text-lg text-gray-600">Laster partier...</div>
+      </div>
+    );
+  }
 
   return (
     <div className="relative min-h-screen">
@@ -95,7 +158,7 @@ export default function PartiContent({ session }: PartierContentsProps) {
               Partier på stortinget
             </h1>
             <p className="mt-2 text-sm text-gray-700">
-              En oversikt over politiske partier
+              En oversikt over politiske partier og deres representanter
             </p>
           </div>
           <div className="mt-4 sm:ml-16 sm:mt-0 sm:flex-none">
@@ -111,7 +174,6 @@ export default function PartiContent({ session }: PartierContentsProps) {
 
         {/* Table */}
         <div className="mt-8 rounded-lg bg-white p-6 shadow">
-          <h3 className="mb-4 text-lg font-medium text-gray-900">Partioversikt</h3>
           <div className="flow-root">
             <div className="overflow-x-auto">
               <table className="min-w-full divide-y divide-gray-200">
@@ -124,10 +186,10 @@ export default function PartiContent({ session }: PartierContentsProps) {
                       Leder
                     </th>
                     <th scope="col" className="px-6 py-3.5 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
-                      Medlemmer
+                      Representanter
                     </th>
                     <th scope="col" className="px-6 py-3.5 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
-                      Stortingsrepresentanter
+                      Stemmehistorikk
                     </th>
                     <th scope="col" className="px-6 py-3.5 text-right text-xs font-medium uppercase tracking-wider text-gray-500">
                       Handlinger
@@ -135,31 +197,33 @@ export default function PartiContent({ session }: PartierContentsProps) {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-200">
-                  {parties.map((party) => (
+                  {data?.items.map((party) => (
                     <tr key={party.id} className="hover:bg-gray-50">
                       <td className="whitespace-nowrap py-4 pl-6 pr-3">
                         <div className="flex items-center">
                           <div className="h-10 w-10 flex-shrink-0">
-                            <img 
-                              className="h-10 w-10 rounded-full object-cover"
-                              src={party.imageUrl} 
-                              alt={`${party.name} logo`}
+                            <div 
+                              className="h-10 w-10 rounded-full flex items-center justify-center border border-gray-200"
+                              style={{ backgroundColor: getPartyColor(party.logo) }}
+                              title={`${party.name} party color`}
                             />
                           </div>
                           <div className="ml-4">
                             <div className="font-medium text-gray-900">{party.name}</div>
-                            <div className="text-sm text-gray-500">{party.ideologi}</div>
+                            <div className="text-sm text-gray-500">
+                              {party.ideology ?? 'Ingen ideologi spesifisert'}
+                            </div>
                           </div>
                         </div>
                       </td>
                       <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-500">
-                        {party.leder}
+                        {party.leader ?? 'Ikke spesifisert'}
                       </td>
                       <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-500">
-                        {party.medlemmer.toLocaleString()}
+                        {party.representatives}
                       </td>
                       <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-500">
-                        {party.stortingsRepresentanter}
+                        {party._count?.partyVoteStats ?? 0} stemmer
                       </td>
                       <td className="whitespace-nowrap px-6 py-4 text-right text-sm font-medium">
                         <button
@@ -192,7 +256,7 @@ export default function PartiContent({ session }: PartierContentsProps) {
         <div className="fixed inset-0 overflow-y-auto p-4 sm:p-6 md:p-20">
           <Dialog.Panel className="mx-auto max-w-3xl divide-y divide-gray-100 overflow-hidden rounded-xl bg-white shadow-2xl">
             <Combobox
-              onChange={(party: Parti) => {
+              onChange={(party: Party) => {
                 setSearchOpen(false);
                 setSelectedParti(party);
                 setDrawerOpen(true);
@@ -210,9 +274,9 @@ export default function PartiContent({ session }: PartierContentsProps) {
                 />
               </div>
 
-              {filteredParties.length > 0 && (
+              {searchResults && searchResults.length > 0 && (
                 <ComboboxOptions className="max-h-72 scroll-py-2 overflow-y-auto py-2 text-sm text-gray-800">
-                  {filteredParties.map((party) => (
+                  {searchResults.map((party) => (
                     <ComboboxOption
                       key={party.id}
                       value={party}
@@ -228,7 +292,7 @@ export default function PartiContent({ session }: PartierContentsProps) {
                 </ComboboxOptions>
               )}
 
-              {query && filteredParties.length === 0 && (
+              {query && (!searchResults || searchResults.length === 0) && (
                 <div className="px-6 py-14 text-center text-sm sm:px-14">
                   <UsersIcon
                     className="mx-auto h-6 w-6 text-gray-400"
@@ -276,7 +340,7 @@ export default function PartiContent({ session }: PartierContentsProps) {
                   {selectedParti && (
                     <>
                       <h2 className="mb-4 text-lg font-medium">{selectedParti.name}</h2>
-                      <DrawerContent parti={selectedParti} />
+                      <DrawerContent party={selectedParti} />
                     </>
                   )}
                 </div>

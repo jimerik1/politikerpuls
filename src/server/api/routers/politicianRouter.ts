@@ -25,9 +25,14 @@ export const politicianRouter = createTRPCRouter({
               vote: true,
               case: true,
             },
-            take: 10, // Limit to latest 10 votes
+            take: 10,
             orderBy: {
               votedAt: 'desc',
+            },
+          },
+          GovernmentMember: {
+            where: {
+              endDate: null, // Only current government position
             },
           },
         },
@@ -37,7 +42,10 @@ export const politicianRouter = createTRPCRouter({
         throw new Error("Politician not found");
       }
 
-      return politician;
+      return {
+        ...politician,
+        isInGovernment: politician.GovernmentMember.length > 0,
+      };
     }),
 
   // Get all politicians with basic info
@@ -46,13 +54,24 @@ export const politicianRouter = createTRPCRouter({
       z.object({
         limit: z.number().min(1).max(100).default(50),
         cursor: z.string().nullish(),
+        inGovernment: z.boolean().optional(), // New filter parameter
       })
     )
     .query(async ({ ctx, input }) => {
-        console.log("ctx.db is:", ctx.db)
       const items = await ctx.db.politician.findMany({
         take: input.limit + 1,
         cursor: input.cursor ? { id: input.cursor } : undefined,
+        where: input.inGovernment !== undefined ? {
+          GovernmentMember: input.inGovernment ? {
+            some: {
+              endDate: null, // Only current government positions
+            }
+          } : {
+            none: {
+              endDate: null,
+            }
+          }
+        } : undefined,
         orderBy: {
           lastName: 'asc',
         },
@@ -70,6 +89,15 @@ export const politicianRouter = createTRPCRouter({
               isActive: true,
             },
           },
+          GovernmentMember: {
+            where: {
+              endDate: null,
+            },
+            select: {
+              title: true,
+              department: true,
+            },
+          },
         },
       });
 
@@ -80,7 +108,12 @@ export const politicianRouter = createTRPCRouter({
       }
 
       return {
-        items,
+        items: items.map(item => ({
+          ...item,
+          isInGovernment: item.GovernmentMember.length > 0,
+          governmentRole: item.GovernmentMember[0]?.title,
+          governmentDepartment: item.GovernmentMember[0]?.department,
+        })),
         nextCursor,
       };
     }),
@@ -90,19 +123,51 @@ export const politicianRouter = createTRPCRouter({
     .input(z.object({
       query: z.string().min(1),
       limit: z.number().min(1).max(100).default(10),
+      inGovernment: z.boolean().optional(), // New filter parameter
     }))
     .query(async ({ ctx, input }) => {
-      return ctx.db.politician.findMany({
+      const politicians = await ctx.db.politician.findMany({
         where: {
-          OR: [
-            { firstName: { contains: input.query, mode: 'insensitive' } },
-            { lastName: { contains: input.query, mode: 'insensitive' } },
+          AND: [
+            {
+              OR: [
+                { firstName: { contains: input.query, mode: 'insensitive' } },
+                { lastName: { contains: input.query, mode: 'insensitive' } },
+              ],
+            },
+            input.inGovernment !== undefined ? {
+              GovernmentMember: input.inGovernment ? {
+                some: {
+                  endDate: null,
+                }
+              } : {
+                none: {
+                  endDate: null,
+                }
+              }
+            } : {},
           ],
         },
         take: input.limit,
         include: {
           party: true,
+          GovernmentMember: {
+            where: {
+              endDate: null,
+            },
+            select: {
+              title: true,
+              department: true,
+            },
+          },
         },
       });
+
+      return politicians.map(politician => ({
+        ...politician,
+        isInGovernment: politician.GovernmentMember.length > 0,
+        governmentRole: politician.GovernmentMember[0]?.title,
+        governmentDepartment: politician.GovernmentMember[0]?.department,
+      }));
     }),
 });
