@@ -54,7 +54,7 @@ export default function PolitikereContent({ session }: PolitikereContentsProps) 
 
   // Helper function for index badges
   const renderIndexBadge = (index: number) => {
-    let color = index >= 80 ? "green" : index >= 60 ? "yellow" : "red";
+    const color = index >= 80 ? "green" : index >= 60 ? "yellow" : "red";
     
     return (
       <span
