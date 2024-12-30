@@ -102,6 +102,8 @@ model Politician {
     updatedAt        DateTime  @updatedAt
 
     @@index([firstName, lastName])
+    Biography Biography[]
+    GovernmentMember GovernmentMember[]
 }
 
 model PoliticianRole {
@@ -137,37 +139,62 @@ model Party {
     updatedAt       DateTime @updatedAt
 
     @@index([name])
+    GovernmentMember GovernmentMember[]
 }
 
 model Case {
-    id              String   @id // Using Stortinget's case ID
-    shortTitle      String
-    fullTitle       String  @db.Text
-    description     String  @db.Text
-    status          String  // e.g., 'open', 'closed', 'in_progress'
-    reference       String?
-    type            String?
-    sessionId       String  // Parliamentary session ID
-    documentGroup   String?
-    proposedDate    DateTime
-    decidedDate     DateTime?
+    id              String   @id // Using our own UUID
+    stortingetId    String   @unique // Stortinget's ID
+    shortTitle      String?  // Make optional
+    fullTitle       String?  @db.Text  // Make optional
+    description     String?  @db.Text  // Already optional
+    status          String?  // Make optional
+    reference       String?  // Already optional
+    type            String?  // Make optional
+    sessionId       String
+    documentGroup   String?  // Already optional
+    proposedDate    DateTime? // Already optional
+    decidedDate     DateTime? // Already optional
     
     committee       Committee? @relation(fields: [committeeId], references: [id])
     committeeId     String?
     
-    votes           Vote[]          // The actual votes held for this case
-    voteRecords     VoteRecord[]    // Individual voting records
+    session         StortingSession @relation(fields: [sessionId], references: [id])
+    
+    votes           Vote[]          
+    voteRecords     VoteRecord[]    
     topics          CaseTopic[]
-    partyVoteStats  PartyVoteStats[] // Statistics per party
+    partyVoteStats  PartyVoteStats[] 
     documents       CaseDocument[]
     
     createdAt       DateTime @default(now())
     updatedAt       DateTime @updatedAt
+    events          CaseEvent[]   // Relasjon fra Case til en liste av events
+
 
     @@index([shortTitle])
     @@index([sessionId])
     @@index([proposedDate])
     @@index([status])
+    @@index([stortingetId]) // Legger til index på Stortingets ID
+}
+
+model CaseEvent {
+  id              String       @id @default(cuid())  
+  caseId          String
+  case            Case         @relation(fields: [caseId], references: [id])  
+
+  sessionId       String       // f.eks. "2022-2023"
+  status          String?
+  reference       String?
+  eventDate       DateTime     // Dato for når endringen ble registrert
+  // eventType     String?     // Valgfritt, hva slags hendelse? (“Oppdatert status”, “Komité endret”, …)
+  // beskrivelse   String?     // Valgfritt, detaljert tekst
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+
+  @@index([caseId])
+  @@index([sessionId])
 }
 
 model Vote {
@@ -231,8 +258,8 @@ model PartyVoteStats {
 }
 
 model Committee {
-    id          String   @id // Using Stortinget's committee ID
-    name        String
+    id          String   @id // Using Stortinget's committee ID (e.g., "ARBSOS")
+    name        String   // The full name of the committee
     description String?  @db.Text
     
     cases       Case[]
@@ -240,6 +267,8 @@ model Committee {
     
     createdAt   DateTime @default(now())
     updatedAt   DateTime @updatedAt
+
+    @@index([name])
 }
 
 model CommitteeMembership {
@@ -271,6 +300,7 @@ model CaseTopic {
     updatedAt   DateTime @updatedAt
 
     @@index([name])
+    Topic Topic[]
 }
 
 model CaseDocument {
@@ -286,4 +316,194 @@ model CaseDocument {
     updatedAt   DateTime @updatedAt
 
     @@index([type, date])
+}
+
+model Topic {
+    id              String    @id // Using Stortinget's topic ID
+    name            String
+    isMainTopic     Boolean   @default(false)
+    mainTopicId     String?   // Will be null for main topics
+    mainTopic       Topic?    @relation("TopicHierarchy", fields: [mainTopicId], references: [id])
+    subTopics       Topic[]   @relation("TopicHierarchy")
+    
+    cases           CaseTopic[]
+    
+    createdAt       DateTime  @default(now())
+    updatedAt       DateTime  @updatedAt
+
+    @@index([name])
+    @@index([mainTopicId])
+}
+
+model Biography {
+    id              String    @id @default(cuid())
+    politicianId    String    @unique  // References Politician
+    politician      Politician @relation(fields: [politicianId], references: [id])
+    
+    // Parents information
+    fatherName      String?
+    fatherBirthYear Int?
+    fatherDeathYear Int?
+    fatherOccupation String?
+    motherName      String?
+    motherBirthYear Int?
+    motherDeathYear Int?
+    motherOccupation String?
+    
+    // Basic info
+    birthCounty     String?
+    birthMunicipality String?
+    memorialDate    DateTime?
+    seniorityYears  Int?
+    seniorityDays   Int?
+    
+    // Related records
+    education       Education[]
+    workExperience  WorkExperience[]
+    publications    Publication[]
+    leaveRecords    LeaveRecord[]
+    awards          Award[]
+    otherActivities OtherActivity[]
+    
+    createdAt       DateTime @default(now())
+    updatedAt       DateTime @updatedAt
+}
+
+model Education {
+    id          String    @id @default(cuid())
+    biographyId String
+    biography   Biography @relation(fields: [biographyId], references: [id])
+    
+    institution String
+    startYear   Int
+    endYear     Int?
+    notes       String?
+    
+    createdAt   DateTime @default(now())
+    updatedAt   DateTime @updatedAt
+
+    @@index([biographyId])
+}
+
+model WorkExperience {
+    id          String    @id @default(cuid())
+    biographyId String
+    biography   Biography @relation(fields: [biographyId], references: [id])
+    
+    organization String
+    role        String?
+    startYear   Int
+    endYear     Int?
+    notes       String?
+    
+    createdAt   DateTime @default(now())
+    updatedAt   DateTime @updatedAt
+
+    @@index([biographyId])
+}
+
+model Publication {
+    id          String    @id @default(cuid())
+    biographyId String
+    biography   Biography @relation(fields: [biographyId], references: [id])
+    
+    title       String
+    year        Int
+    publisher   String?
+    location    String?
+    type        String?   // e.g., "Medforfatter", "Forfatter"
+    
+    createdAt   DateTime @default(now())
+    updatedAt   DateTime @updatedAt
+
+    @@index([biographyId])
+}
+
+model LeaveRecord {
+    id             String    @id @default(cuid())
+    biographyId    String
+    biography      Biography @relation(fields: [biographyId], references: [id])
+    
+    startDate      DateTime
+    endDate        DateTime?
+    reason         String    // e.g., "REGJ"
+    type          String    // e.g., "BORTE", "VARA"
+    substituteFirstName String?
+    substituteLastName  String?
+    
+    createdAt      DateTime @default(now())
+    updatedAt      DateTime @updatedAt
+
+    @@index([biographyId])
+}
+
+model Award {
+    id          String    @id @default(cuid())
+    biographyId String
+    biography   Biography @relation(fields: [biographyId], references: [id])
+    
+    name        String
+    year        Int
+    notes       String?
+    
+    createdAt   DateTime @default(now())
+    updatedAt   DateTime @updatedAt
+
+    @@index([biographyId])
+}
+
+model OtherActivity {
+    id          String    @id @default(cuid())
+    biographyId String
+    biography   Biography @relation(fields: [biographyId], references: [id])
+    
+    description String
+    type        String    // Type code (30 for war efforts etc.)
+    startYear   Int
+    endYear     Int?
+    notes       String?
+    
+    createdAt   DateTime @default(now())
+    updatedAt   DateTime @updatedAt
+
+    @@index([biographyId])
+}
+
+model GovernmentMember {
+    id              String    @id // Using Stortinget's ID (e.g., "JGS")
+    firstName       String
+    lastName        String
+    dateOfBirth     DateTime
+    gender          String    // 'mann' or 'kvinne'
+    department      String
+    title          String    // e.g., "Statsminister"
+    role           String    // e.g., "Statsminister" or "Statsråd"
+    sortOrder      Int       // Based on 'sortering' field
+    
+    politician     Politician? @relation(fields: [politicianId], references: [id])
+    politicianId   String?    // Optional because some government members might not be in Stortinget
+    
+    party          Party      @relation(fields: [partyId], references: [id])
+    partyId        String
+    
+    startDate      DateTime   @default(now())
+    endDate        DateTime?
+    
+    createdAt      DateTime  @default(now())
+    updatedAt      DateTime  @updatedAt
+
+    @@index([department])
+    @@index([startDate, endDate])
+}
+
+model StortingSession {
+    id          String   @id
+    startDate   DateTime
+    endDate     DateTime
+    cases       Case[]
+    
+    createdAt   DateTime @default(now())
+    updatedAt   DateTime @updatedAt
+
+    @@index([startDate, endDate])
 }

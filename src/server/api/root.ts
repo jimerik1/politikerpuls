@@ -1,6 +1,11 @@
 import { postRouter } from "~/server/api/routers/post";
 import { politicianRouter } from "./routers/politicianRouter";
 import { createCallerFactory, createTRPCRouter } from "~/server/api/trpc";
+import { partyRouter } from "./routers/partyRouter";
+import { biographyRouter } from "./routers/biographyRouter";
+import { governmentRouter } from "./routers/governmentRouter";
+import { caseRouter } from "./routers/caseRouter";
+import { topicRouter } from "./routers/topicRouter";
 
 /**
  * This is the primary router for your server.
@@ -10,7 +15,11 @@ import { createCallerFactory, createTRPCRouter } from "~/server/api/trpc";
 export const appRouter = createTRPCRouter({
   post: postRouter,
   politician: politicianRouter,
-
+  party: partyRouter,
+  biography: biographyRouter,
+  government: governmentRouter,
+  case: caseRouter,
+  topic: topicRouter,
 });
 
 // export type definition of API

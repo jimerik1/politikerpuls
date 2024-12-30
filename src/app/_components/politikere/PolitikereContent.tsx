@@ -16,6 +16,9 @@ interface Politician {
     image: string | null;
     truthIndex: number | null;
     voteIndex: number | null;
+    isInGovernment: boolean;
+    governmentRole?: string;
+    governmentDepartment?: string;
     party: {
       name: string;
     };
@@ -25,7 +28,8 @@ interface Politician {
       description: string | null;
       isActive: boolean;
     }>;
-  }
+}
+
   
   interface PaginatedPoliticians {
     items: Politician[];
@@ -35,6 +39,15 @@ interface Politician {
   interface PolitikereContentProps {
     session: Session;
   }
+  
+  interface WorkExperience {
+    id: string;
+    organization: string;
+    startYear: number;
+    endYear: number | null;
+    notes: string | null;
+  }
+  
   
 export default function PolitikereContent({ session }: PolitikereContentProps) {
   // States
@@ -77,58 +90,77 @@ export default function PolitikereContent({ session }: PolitikereContentProps) {
     { label: "Parti", value: politiker.party.name },
     { label: "E-post", value: politiker.email ?? "Ikke tilgjengelig" },
     { label: "Telefon", value: politiker.phone ?? "Ikke tilgjengelig" },
-    { label: "Sannferdig-index", value: politiker.truthIndex ? `${politiker.truthIndex}%` : "Ikke tilgjengelig" },
+    { 
+      label: "I Regjering", 
+      value: politiker.isInGovernment 
+        ? `JA${politiker.governmentRole ? ` - ${politiker.governmentRole}` : ''}`
+        : "NEI" 
+    },
     { label: "Stemme-index", value: politiker.voteIndex ? `${politiker.voteIndex}%` : "Ikke tilgjengelig" }
   ];
 
-  const DrawerContent = ({ politiker }: { politiker: Politician }) => (
-    <>
-      <DrawerSection title="Oversikt">
-        <DrawerList items={getDrawerItems(politiker)} />
-      </DrawerSection>
 
-      {politiker.image && (
-        <DrawerSection title="Profilbilde" className="mt-6">
-          <div className="space-y-4">
-            <img
-              src={politiker.image.replace('storrelse=lite', 'storrelse=stort')}
-              alt={`${politiker.firstName} ${politiker.lastName}`}
-              className="w-full rounded-lg object-cover"
-            />
+  const DrawerContent = ({ politiker }: { politiker: Politician }) => {
+    // Move the query to the top of the component
+    const { data: workExperience, isLoading: isLoadingWork } = api.biography.getWorkExperience.useQuery(
+      politiker.id
+    );
+  
+    return (
+      <>
+        <DrawerSection title="Oversikt">
+          <DrawerList items={getDrawerItems(politiker)} />
+        </DrawerSection>
+  
+        {politiker.image && (
+          <DrawerSection title="Profilbilde" className="mt-6">
+            <div className="space-y-4">
+              <img
+                src={politiker.image.replace('storrelse=lite', 'storrelse=stort')}
+                alt={`${politiker.firstName} ${politiker.lastName}`}
+                className="w-full rounded-lg object-cover"
+              />
+            </div>
+          </DrawerSection>
+        )}
+  
+        <DrawerSection title="Arbeidserfaring" className="mt-6">
+          <div className="space-y-2">
+            {isLoadingWork ? (
+              <div className="text-sm text-gray-500">Laster arbeidserfaring...</div>
+            ) : workExperience && workExperience.length > 0 ? (
+              workExperience.map((work) => (
+                <div
+                  key={work.id}
+                  className="rounded-md bg-gray-50 px-3 py-2 text-sm text-gray-700"
+                >
+                  <div className="font-medium">{work.organization}</div>
+                  <div className="mt-1 text-gray-500">
+                    {work.startYear} - {work.endYear ?? 'Nå'}
+                    {work.notes && <div className="mt-1 italic">{work.notes}</div>}
+                  </div>
+                </div>
+              ))
+            ) : (
+              <div className="text-sm text-gray-500">Ingen arbeidserfaring registrert</div>
+            )}
           </div>
         </DrawerSection>
-      )}
-
-      <DrawerSection title="Roller og verv" className="mt-6">
-        <div className="space-y-2">
-          {politiker.roles
-            .filter(role => role.isActive)
-            .map((role) => (
-              <div
-                key={role.id}
-                className="rounded-md bg-gray-50 px-3 py-2 text-sm text-gray-700"
-              >
-                <div className="font-medium">{role.title}</div>
-                {role.description && (
-                  <div className="mt-1 text-gray-500">{role.description}</div>
-                )}
-              </div>
-            ))}
-        </div>
-      </DrawerSection>
-
-      <DrawerSection title="Handlinger" className="mt-6">
-        <div className="flex flex-col gap-2">
-          <button
-            type="button"
-            className="inline-flex items-center justify-center rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
-          >
-            Send melding
-          </button>
-        </div>
-      </DrawerSection>
-    </>
-  );
+  
+        <DrawerSection title="Handlinger" className="mt-6">
+          <div className="flex flex-col gap-2">
+            <button
+              type="button"
+              className="inline-flex items-center justify-center rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
+            >
+              Send melding
+            </button>
+          </div>
+        </DrawerSection>
+      </>
+    );
+  };
+  
 
   if (isLoading) {
     return (
@@ -167,7 +199,7 @@ export default function PolitikereContent({ session }: PolitikereContentProps) {
           <div className="flow-root">
             <div className="overflow-x-auto">
               <table className="min-w-full divide-y divide-gray-200">
-                <thead>
+              <thead>
                   <tr>
                     <th scope="col" className="py-3.5 pl-6 pr-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
                       Navn
@@ -176,7 +208,7 @@ export default function PolitikereContent({ session }: PolitikereContentProps) {
                       Parti
                     </th>
                     <th scope="col" className="px-6 py-3.5 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
-                      Sannferdig-index
+                      Roller
                     </th>
                     <th scope="col" className="px-6 py-3.5 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
                       Stemme-index
@@ -185,7 +217,7 @@ export default function PolitikereContent({ session }: PolitikereContentProps) {
                       Roller
                     </th>
                     <th scope="col" className="px-6 py-3.5 text-right text-xs font-medium uppercase tracking-wider text-gray-500">
-                      Handlinger
+                      
                     </th>
                   </tr>
                 </thead>
@@ -212,8 +244,19 @@ export default function PolitikereContent({ session }: PolitikereContentProps) {
                       <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-500">
                         {person.party.name}
                       </td>
-                      <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-500">
-                        {renderIndexBadge(person.truthIndex)}
+                      <td className="whitespace-nowrap px-6 py-4 text-sm">
+                        {person.isInGovernment ? (
+                          <span className="inline-flex items-center rounded-md bg-green-50 px-2 py-1 text-xs font-medium text-green-700 ring-1 ring-inset ring-green-600/20">
+                            
+                            {person.governmentRole && (
+                              <span className="ml-1 text-gray-500">{person.governmentRole}</span>
+                            )}
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center rounded-md bg-gray-50 px-2 py-1 text-xs font-medium text-gray-600 ring-1 ring-inset ring-gray-500/10">
+                            NEI
+                          </span>
+                        )}
                       </td>
                       <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-500">
                         {renderIndexBadge(person.voteIndex)}
