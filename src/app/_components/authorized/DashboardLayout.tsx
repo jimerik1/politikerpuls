@@ -66,14 +66,19 @@ const DashboardLayout = ({ session, children }: DashboardLayoutProps) => {
             <span>Ledertavler</span>
           </Link>
           
+        </nav>
+
+
+          <div className="flex items-center rounded-lg p-2 text-gray-600 hover:bg-gray-100">
           <Link 
             href="/innstillinger" 
             className="flex items-center rounded-lg p-2 text-gray-600 hover:bg-gray-100"
           >
             <SettingsIcon className="mr-3 h-5 w-5" />
             <span>Innstillinger</span>
-          </Link>
-        </nav>
+          </Link> 
+
+        </div>
 
         <div className="border-t border-gray-200 pt-4">
           <div className="flex items-center">
@@ -89,6 +94,7 @@ const DashboardLayout = ({ session, children }: DashboardLayoutProps) => {
               <p className="text-sm text-gray-500">{session.user?.email}</p>
             </div>
           </div>
+          
           <Link
             href="/api/auth/signout"
             className="mt-4 flex w-full items-center rounded-lg p-2 text-gray-600 hover:bg-gray-100"
