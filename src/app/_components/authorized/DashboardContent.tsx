@@ -97,6 +97,24 @@ const DashboardContent = ({ session }: DashboardContentProps) => {
                   </span>
                 </td>
               </tr>
+              <tr>
+                <td className="whitespace-nowrap px-6 py-4">
+                  <span className="rounded-full bg-blue-100 px-2 py-1 text-xs font-medium text-blue-800">
+                    Issue
+                  </span>
+                </td>
+                <td className="px-6 py-4">
+                  <div className="text-sm text-gray-900">Climate Change Policy Discussion</div>
+                </td>
+                <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-500">
+                  2024-03-15
+                </td>
+                <td className="whitespace-nowrap px-6 py-4">
+                  <span className="rounded-full bg-green-100 px-2 py-1 text-xs font-medium text-green-800">
+                    Active
+                  </span>
+                </td>
+              </tr>
               {/* Add more rows as needed */}
             </tbody>
           </table>
