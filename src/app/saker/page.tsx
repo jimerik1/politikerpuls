@@ -1,0 +1,20 @@
+import React from "react";
+import { redirect } from "next/navigation"; // or use your own redirect
+import { auth } from "~/server/auth"; 
+
+import SakerPageClient from "./SakerPageClient";
+
+export default async function SakerPage() {
+  // 1. server: fetch the session
+  const session = await auth(); 
+
+  // 2. if session doesn’t exist, redirect or handle 
+  if (!session) {
+    // redirect("/api/auth/signin");
+    redirect("/api/auth/signin");
+    // or throw some error
+  }
+
+  // 3. Render the client component, passing the session
+  return <SakerPageClient session={session} />;
+}
