@@ -50,73 +50,82 @@ export const politicianRouter = createTRPCRouter({
 
   // Get all politicians with basic info
   getAll: protectedProcedure
-    .input(
-      z.object({
-        limit: z.number().min(1).max(100).default(50),
-        cursor: z.string().nullish(),
-        inGovernment: z.boolean().optional(), // New filter parameter
-      })
-    )
-    .query(async ({ ctx, input }) => {
-      const items = await ctx.db.politician.findMany({
-        take: input.limit + 1,
-        cursor: input.cursor ? { id: input.cursor } : undefined,
-        where: input.inGovernment !== undefined ? {
-          GovernmentMember: input.inGovernment ? {
-            some: {
-              endDate: null, // Only current government positions
+  .input(
+    z.object({
+      limit: z.number().min(1).max(200).default(50),
+      cursor: z.string().nullish(),
+      inGovernment: z.boolean().optional(),
+      stortingsperiode_id: z.string().optional(), // Add this line
+    })
+  )
+  .query(async ({ ctx, input }) => {
+    const items = await ctx.db.politician.findMany({
+      take: input.limit + 1,
+      cursor: input.cursor ? { id: input.cursor } : undefined,
+      where: {
+        AND: [
+          input.inGovernment !== undefined ? {
+            GovernmentMember: input.inGovernment ? {
+              some: {
+                endDate: null,
+              }
+            } : {
+              none: {
+                endDate: null,
+              }
             }
-          } : {
-            none: {
-              endDate: null,
-            }
-          }
-        } : undefined,
-        orderBy: {
-          lastName: 'asc',
-        },
-        include: {
-          party: {
-            select: {
-              name: true,
-            },
-          },
-          roles: {
-            select: {
-              id: true,
-              title: true,
-              description: true,
-              isActive: true,
-            },
-          },
-          GovernmentMember: {
-            where: {
-              endDate: null,
-            },
-            select: {
-              title: true,
-              department: true,
-            },
+          } : {},
+          input.stortingsperiode_id ? {
+            stortingsperiode_id: input.stortingsperiode_id === 'all' ? undefined : input.stortingsperiode_id
+          } : {},
+        ],
+      },
+      orderBy: {
+        lastName: 'asc',
+      },
+      include: {
+        party: {
+          select: {
+            name: true,
           },
         },
-      });
+        roles: {
+          select: {
+            id: true,
+            title: true,
+            description: true,
+            isActive: true,
+          },
+        },
+        GovernmentMember: {
+          where: {
+            endDate: null,
+          },
+          select: {
+            title: true,
+            department: true,
+          },
+        },
+      },
+    });
 
-      let nextCursor: typeof input.cursor = undefined;
-      if (items.length > input.limit) {
-        const nextItem = items.pop();
-        nextCursor = nextItem?.id;
-      }
+    let nextCursor: typeof input.cursor = undefined;
+    if (items.length > input.limit) {
+      const nextItem = items.pop();
+      nextCursor = nextItem?.id;
+    }
 
-      return {
-        items: items.map(item => ({
-          ...item,
-          isInGovernment: item.GovernmentMember.length > 0,
-          governmentRole: item.GovernmentMember[0]?.title,
-          governmentDepartment: item.GovernmentMember[0]?.department,
-        })),
-        nextCursor,
-      };
-    }),
+    return {
+      items: items.map(item => ({
+        ...item,
+        isInGovernment: item.GovernmentMember.length > 0,
+        governmentRole: item.GovernmentMember[0]?.title,
+        governmentDepartment: item.GovernmentMember[0]?.department,
+      })),
+      nextCursor,
+    };
+  }),
+
 
   // Search politicians
   search: protectedProcedure

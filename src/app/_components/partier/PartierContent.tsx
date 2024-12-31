@@ -182,6 +182,9 @@ export default function PartiContent({ session }: PartierContentsProps) {
                     <th scope="col" className="py-3.5 pl-6 pr-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
                       Parti
                     </th>
+                    <th scope="col" className="py-3.5 pl-6 pr-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
+                      Status
+                    </th>
                     <th scope="col" className="px-6 py-3.5 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
                       Leder
                     </th>
@@ -217,8 +220,17 @@ export default function PartiContent({ session }: PartierContentsProps) {
                         </div>
                       </td>
                       <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-500">
+                        <div className="flex items-center space-x-2">
+                          {/* Example of using Heroicons */}
+                          <UsersIcon className="h-5 w-5 text-blue-500" aria-hidden="true" />
+                          <MagnifyingGlassIcon className="h-5 w-5 text-green-500" aria-hidden="true" />
+                          <XMarkIcon className="h-5 w-5 text-red-500" aria-hidden="true" />
+                        </div>
+                      </td>
+                      <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-500">
                         {party.leader ?? 'Ikke spesifisert'}
                       </td>
+                      
                       <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-500">
                         {party.representatives}
                       </td>
