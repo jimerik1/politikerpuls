@@ -1,6 +1,82 @@
 import { z } from "zod";
 import { createTRPCRouter, protectedProcedure } from "~/server/api/trpc";
 
+interface StortingetApiResponse {
+  tittel?: string;
+  korttittel?: string;
+  henvisning?: string;
+  status?: string;
+  type?: string;
+  innstillingstekst?: string;
+  kortvedtak?: string;
+  sak_opphav?: {
+    forslagstiller_liste?: Array<{
+      fornavn?: string;
+      etternavn?: string;
+    }>;
+  };
+  komite?: {
+    navn?: string;
+  };
+  emne_liste?: Array<{
+    navn?: string;
+    er_hovedemne?: boolean;
+  }>;
+}
+
+// Define base schemas
+const CommitteeSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+});
+
+const TopicSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+});
+
+const CaseTopicSchema = z.object({
+  id: z.string().optional(),
+  name: z.string().optional(),
+  isMainTopic: z.boolean().optional(),
+  Topic: z.array(TopicSchema).optional(),
+});
+
+// Schema for detailed case from external API
+const DetailedCaseSchema = z.object({
+  title: z.string().nullable(),
+  shortTitle: z.string().nullable(),
+  reference: z.string().nullable(),
+  status: z.string().nullable(),
+  caseType: z.string().nullable(),
+  description: z.string().nullable(),
+  summary: z.string().nullable(),
+  proposedBy: z.string().nullable(),
+  committee: z.string().nullable(),
+  topics: z.array(
+    z.object({
+      name: z.string(),
+      isMainTopic: z.boolean(),
+    })
+  ).nullable(),
+});
+
+// Define the response type for getAll and search endpoints
+const CaseResponseSchema = z.object({
+  id: z.string(),
+  stortingetId: z.string(),
+  shortTitle: z.string().nullable(),
+  fullTitle: z.string().nullable(),
+  status: z.string().nullable(),
+  reference: z.string().nullable(),
+  type: z.string().nullable(),
+  documentGroup: z.string().nullable(),
+  proposedDate: z.date().nullable(),
+  mainTopic: TopicSchema.nullable(),
+  committee: CommitteeSchema.nullable(),
+  topics: z.array(CaseTopicSchema).nullable(),
+});
+
 export const caseRouter = createTRPCRouter({
   getById: protectedProcedure
     .input(z.object({ id: z.string() }))
@@ -30,7 +106,7 @@ export const caseRouter = createTRPCRouter({
       return foundCase;
     }),
 
-    getAll: protectedProcedure
+  getAll: protectedProcedure
     .input(
       z.object({
         limit: z.number().min(1).max(200).default(20),
@@ -69,8 +145,8 @@ export const caseRouter = createTRPCRouter({
           ],
         },
         orderBy: [
-          { proposedDate: "desc" },  // Primary sort by proposedDate
-          { createdAt: "desc" }      // Secondary sort by createdAt
+          { proposedDate: "desc" },
+          { createdAt: "desc" }
         ],
         select: {
           id: true,
@@ -80,8 +156,8 @@ export const caseRouter = createTRPCRouter({
           reference: true,
           type: true,
           documentGroup: true,
-          proposedDate: true,  // Include proposedDate
-          stortingetId: true,  // Add this line
+          proposedDate: true,
+          stortingetId: true,
           mainTopic: {
             select: {
               id: true,
@@ -108,58 +184,73 @@ export const caseRouter = createTRPCRouter({
         nextCursor = nextItem?.id;
       }
 
+      // Validate items against schema
+      const validatedItems = z.array(CaseResponseSchema).parse(items);
+
       return {
-        items,
+        items: validatedItems,
         nextCursor,
       };
     }),
 
     getDetailedCase: protectedProcedure
     .input(z.object({ 
-      stortingetId: z.string() 
+      stortingetId: z.string()
     }))
     .query(async ({ input }) => {
       try {
-        // Fetch the data from Stortinget's API
         const response = await fetch(
           `https://data.stortinget.no/eksport/sak?sakid=${input.stortingetId}&format=json`
         );
-
+  
         if (!response.ok) {
           throw new Error('Failed to fetch case details');
         }
-
-        const data = await response.json();
+  
+        const data = await response.json() as StortingetApiResponse;
         
-        // Extract and format relevant information
-        const caseDetails = {
-          title: data.tittel,
-          shortTitle: data.korttittel,
-          reference: data.henvisning,
-          status: data.status,
-          caseType: data.type,
-          description: data.innstillingstekst,
-          summary: data.kortvedtak,
-          proposedBy: data.sak_opphav?.forslagstiller_liste?.map((f: any) => 
-            `${f.fornavn} ${f.etternavn}`
-          ).join(', '),
-          committee: data.komite?.navn,
-          topics: data.emne_liste?.map((e: any) => ({
-            name: e.navn,
-            isMainTopic: e.er_hovedemne
-          })),
-          // Add more fields as needed
+        // Type-safe transformation
+        return {
+          title: data.tittel ?? null,
+          shortTitle: data.korttittel ?? null,
+          reference: data.henvisning ?? null,
+          status: data.status ?? null,
+          caseType: data.type ?? null,
+          description: data.innstillingstekst ?? null,
+          summary: data.kortvedtak ?? null,
+          proposedBy: data.sak_opphav?.forslagstiller_liste 
+            ? data.sak_opphav.forslagstiller_liste
+                .map(f => `${f.fornavn ?? ''} ${f.etternavn ?? ''}`.trim())
+                .filter(Boolean)
+                .join(', ') || null
+            : null,
+          committee: data.komite?.navn ?? null,
+          topics: data.emne_liste 
+            ? data.emne_liste.map(e => ({
+                name: e.navn ?? '',
+                isMainTopic: e.er_hovedemne ?? false
+              }))
+            : null
+        } satisfies {
+          title: string | null;
+          shortTitle: string | null;
+          reference: string | null;
+          status: string | null;
+          caseType: string | null;
+          description: string | null;
+          summary: string | null;
+          proposedBy: string | null;
+          committee: string | null;
+          topics: Array<{ name: string; isMainTopic: boolean; }> | null;
         };
-
-        return caseDetails;
       } catch (error) {
         console.error('Error fetching case details:', error);
         throw error;
       }
-    }),
+    })
+,
 
-
-    search: protectedProcedure
+  search: protectedProcedure
     .input(
       z.object({
         query: z.string().min(1),
@@ -210,9 +301,9 @@ export const caseRouter = createTRPCRouter({
         },
       });
   
-      return results;
+      // Validate results against schema
+      return z.array(CaseResponseSchema).parse(results);
     }),
-  
 
   getEventsByCaseId: protectedProcedure
     .input(z.object({ caseId: z.string() }))
