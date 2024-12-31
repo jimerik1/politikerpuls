@@ -1,10 +1,13 @@
 import { type Session } from "next-auth";
 import { useState } from "react";
-import { Dialog, DialogBackdrop, DialogPanel } from "@headlessui/react";
+import { Dialog, DialogBackdrop, DialogPanel, DialogTitle } from "@headlessui/react";
 import { Combobox, ComboboxInput, ComboboxOptions, ComboboxOption } from "@headlessui/react";
 import { XMarkIcon, UsersIcon, MagnifyingGlassIcon } from "@heroicons/react/24/outline";
 import { Drawer, DrawerSection, DrawerList, type DrawerListItem } from "../drawer/Drawer";
 import { api } from "~/trpc/react";
+import { PeriodSelector } from "../PeriodSelector";  // Add this import
+import type { StortingsPeriod } from "../types";
+
 
 // Updated interface to match Prisma schema
 interface Politician {
@@ -51,6 +54,7 @@ interface Politician {
   
 export default function PolitikereContent({ session }: PolitikereContentProps) {
   // States
+  const [selectedPeriod, setSelectedPeriod] = useState<string>("2021-2025");
   const [query, setQuery] = useState("");
   const [searchOpen, setSearchOpen] = useState(false);
   const [selectedPolitiker, setSelectedPolitiker] = useState<Politician | null>(null);
@@ -59,10 +63,12 @@ export default function PolitikereContent({ session }: PolitikereContentProps) {
   // Fetch politicians using TRPC
   const { data, isLoading } = api.politician.getAll.useQuery(
     {
-      limit: 50,
+      limit: 200,
       cursor: undefined,
+      stortingsperiode_id: selectedPeriod,
     },
   );
+
 
   // Search query using TRPC
   const { data: searchResults } = api.politician.search.useQuery(
@@ -184,6 +190,12 @@ export default function PolitikereContent({ session }: PolitikereContentProps) {
             </p>
           </div>
           <div className="mt-4 sm:ml-16 sm:mt-0 sm:flex-none">
+          <div className="mt-4 sm:mt-0 flex items-center gap-4">
+              {/* Add the PeriodSelector here */}
+              <PeriodSelector
+                selectedPeriod={selectedPeriod}
+                onPeriodChange={setSelectedPeriod}
+              />
             <button
               type="button"
               onClick={() => setSearchOpen(true)}
@@ -191,6 +203,7 @@ export default function PolitikereContent({ session }: PolitikereContentProps) {
             >
               Søk politiker
             </button>
+            </div>
           </div>
         </div>
 

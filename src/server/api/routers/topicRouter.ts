@@ -8,19 +8,22 @@ export const topicRouter = createTRPCRouter({
         name: "asc",
       },
       where: {
-        isMainTopic: true, // Only get main topics for the filter
+        isMainTopic: true,
+      },
+      include: {
+        mainCases: true, // Include cases where this is the main topic
       },
     });
   }),
 
-  // Get a single topic by ID
   getById: protectedProcedure
     .input(z.object({ id: z.string() }))
     .query(async ({ ctx, input }) => {
       const topic = await ctx.db.topic.findUnique({
         where: { id: input.id },
         include: {
-          subTopics: true, // Include subtopics if needed
+          subTopics: true,
+          mainCases: true, // Include cases where this is the main topic
         },
       });
 
@@ -31,17 +34,29 @@ export const topicRouter = createTRPCRouter({
       return topic;
     }),
 
-  // Get all topics for a specific case
   getByCaseId: protectedProcedure
     .input(z.object({ caseId: z.string() }))
     .query(async ({ ctx, input }) => {
-      return ctx.db.caseTopic.findMany({
-        where: {
-          caseId: input.caseId,
-        },
+      // First get the case with its main topic
+      const caseWithTopics = await ctx.db.case.findUnique({
+        where: { id: input.caseId },
         include: {
-          Topic: true,
+          mainTopic: true,
+          topics: {
+            include: {
+              Topic: true,
+            },
+          },
         },
       });
+
+      if (!caseWithTopics) {
+        throw new Error("Case not found");
+      }
+
+      return {
+        mainTopic: caseWithTopics.mainTopic,
+        relatedTopics: caseWithTopics.topics,
+      };
     }),
 });

@@ -97,6 +97,10 @@ model Politician {
     roles            PoliticianRole[]
     voteRecords      VoteRecord[]    // Individual voting records
     committeeRoles   CommitteeMembership[]
+
+        // Add proposer relationships
+    proposedCases    CaseProposer[]
+    rapporteurCases  Case[]         @relation("CaseRapporteur")  // Cases where politician is saksordfoerer
     
     createdAt        DateTime  @default(now())
     updatedAt        DateTime  @updatedAt
@@ -143,41 +147,68 @@ model Party {
 }
 
 model Case {
-    id              String   @id // Using our own UUID
-    stortingetId    String   @unique // Stortinget's ID
-    shortTitle      String?  // Make optional
-    fullTitle       String?  @db.Text  // Make optional
-    description     String?  @db.Text  // Already optional
-    status          String?  // Make optional
-    reference       String?  // Already optional
-    type            String?  // Make optional
+    id              String    @id 
+    stortingetId    String    @unique 
+    shortTitle      String?
+    fullTitle       String?   @db.Text
+    description     String?   @db.Text
+    status          String?
+    reference       String?
+    type            String?
     sessionId       String
-    documentGroup   String?  // Already optional
-    proposedDate    DateTime? // Already optional
-    decidedDate     DateTime? // Already optional
+    documentGroup   String?
+    proposedDate    DateTime?
+    decidedDate     DateTime?
+    mainTopicId     String?
     
+    // Committee relationship (existing)
     committee       Committee? @relation(fields: [committeeId], references: [id])
     committeeId     String?
     
-    session         StortingSession @relation(fields: [sessionId], references: [id])
-    
-    votes           Vote[]          
-    voteRecords     VoteRecord[]    
-    topics          CaseTopic[]
-    partyVoteStats  PartyVoteStats[] 
-    documents       CaseDocument[]
-    
-    createdAt       DateTime @default(now())
-    updatedAt       DateTime @updatedAt
-    events          CaseEvent[]   // Relasjon fra Case til en liste av events
+    // Add proposer relationships
+    proposedByPoliticians  CaseProposer[]      // Politicians who proposed this case
+    rapporteur            Politician?    @relation("CaseRapporteur", fields: [rapporteurId], references: [id]) // Saksordfoerer
+    rapporteurId          String?
 
+    // Existing relationships
+    mainTopic      Topic?    @relation("CaseMainTopic", fields: [mainTopicId], references: [id])
+    session        StortingSession @relation(fields: [sessionId], references: [id])
+    votes          Vote[]          
+    voteRecords    VoteRecord[]    
+    topics         CaseTopic[]
+    partyVoteStats PartyVoteStats[] 
+    documents      CaseDocument[]
+    events         CaseEvent[]
+
+    createdAt      DateTime @default(now())
+    updatedAt      DateTime @updatedAt
 
     @@index([shortTitle])
     @@index([sessionId])
     @@index([proposedDate])
     @@index([status])
-    @@index([stortingetId]) // Legger til index på Stortingets ID
+    @@index([stortingetId])
+    @@index([mainTopicId])
+    @@index([rapporteurId])
 }
+
+// New model to handle case proposers (many-to-many)
+model CaseProposer {
+    id            String    @id @default(cuid())
+    case          Case      @relation(fields: [caseId], references: [id])
+    caseId        String
+    politician    Politician @relation(fields: [politicianId], references: [id])
+    politicianId  String
+    proposerType  String    // e.g., 'committee', 'individual'
+    
+    createdAt     DateTime @default(now())
+    updatedAt     DateTime @updatedAt
+
+    @@unique([caseId, politicianId])
+    @@index([caseId])
+    @@index([politicianId])
+}
+
 
 model CaseEvent {
   id              String       @id @default(cuid())  
@@ -327,7 +358,8 @@ model Topic {
     subTopics       Topic[]   @relation("TopicHierarchy")
     
     cases           CaseTopic[]
-    
+    mainCases       Case[]    @relation("CaseMainTopic") // New relation for cases where this is the main topic
+
     createdAt       DateTime  @default(now())
     updatedAt       DateTime  @updatedAt
 
