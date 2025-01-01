@@ -237,12 +237,26 @@ const SakerContent = ({ session }: SakerContentProps) => {
             ? new Date(sak.proposedDate).toLocaleDateString('nb-NO') 
             : 'Ikke satt'}
         </td>
-        <td className="whitespace-nowrap py-4 pl-6 pr-3 text-sm text-gray-900">
-          {truncateText(sak.shortTitle ?? sak.fullTitle ?? "Uten tittel", 50)}
-        </td>
-        <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-500">
+        <td className="py-4 pl-6 pr-3 text-sm text-gray-900">
+        <span className="max-w-xs block break-words">
+          {sak.shortTitle ?? sak.fullTitle ?? "Uten tittel"}
+        </span>
+      </td>
+
+
+
+
+        <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-500 relative group">
+        <span className="cursor-help">{sak.committee?.id ?? ""}</span>
+        <span className="invisible opacity-0 group-hover:visible group-hover:opacity-100 transition-opacity duration-150 delay-500 
+          absolute z-50 px-3 py-2 text-sm font-medium text-white bg-gray-900 rounded-lg 
+          -translate-y-full -translate-x-1/2 left-1/2 top-0 mt-[-8px]
+          after:content-[''] after:absolute after:left-1/2 after:top-[100%] after:-translate-x-1/2 
+          after:border-8 after:border-x-transparent after:border-b-transparent after:border-t-gray-900">
           {sak.committee?.name ?? "Ukjent komité"}
-        </td>
+        </span>
+      </td>
+
         <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-500 inline-flex items-center gap-2">
           <FolderIcon className="h-5 w-5 text-blue-500" aria-hidden="true" />
           <MagnifyingGlassIcon className="h-5 w-5 text-green-500" aria-hidden="true" />
