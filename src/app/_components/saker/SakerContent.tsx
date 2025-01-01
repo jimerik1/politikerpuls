@@ -335,9 +335,9 @@ const SakerContent = ({ session }: SakerContentProps) => {
                         Saksdetaljer
                       </h3>
                       <div className="mt-4 text-sm text-gray-500 prose">
-                        <p>
+                      
                         <CaseDetails stortingetId={selectedCase.stortingetId} />
-                        </p>
+                        
                         {/* Add more content here as needed */}
                       </div>
                     </div>
