@@ -2,7 +2,6 @@
 
 import { type FC, useState } from "react";
 import Link from "next/link";
-import { Menu, X } from "lucide-react";
 import { Dialog, DialogPanel } from "@headlessui/react";
 import { Bars3Icon, XMarkIcon } from '@heroicons/react/24/outline'
 

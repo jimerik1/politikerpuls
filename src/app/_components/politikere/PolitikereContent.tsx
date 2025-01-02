@@ -3,10 +3,9 @@ import { useState } from "react";
 import { Dialog, DialogBackdrop, DialogPanel, DialogTitle } from "@headlessui/react";
 import { Combobox, ComboboxInput, ComboboxOptions, ComboboxOption } from "@headlessui/react";
 import { XMarkIcon, UsersIcon, MagnifyingGlassIcon } from "@heroicons/react/24/outline";
-import { Drawer, DrawerSection, DrawerList, type DrawerListItem } from "../drawer/Drawer";
+import { DrawerSection, DrawerList, type DrawerListItem } from "../drawer/Drawer";
 import { api } from "~/trpc/react";
 import { PeriodSelector } from "../PeriodSelector";  // Add this import
-import type { StortingsPeriod } from "../types";
 
 
 // Updated interface to match Prisma schema
@@ -31,24 +30,9 @@ interface Politician {
       description: string | null;
       isActive: boolean;
     }>;
-}
-
-  
-  interface PaginatedPoliticians {
-    items: Politician[];
-    nextCursor: string | undefined;
-  }
-  
+}  
   interface PolitikereContentProps {
     session: Session;
-  }
-  
-  interface WorkExperience {
-    id: string;
-    organization: string;
-    startYear: number;
-    endYear: number | null;
-    notes: string | null;
   }
   
   

@@ -25,19 +25,6 @@ interface StortingetApiResponse {
   }>;
 }
 
-
-const DocumentContentSchema = z.object({
-  chapterText: z.array(z.string()),
-  committeeText: z.string().nullable(),
-  proposalText: z.string().nullable(),
-  decision: z.string().nullable(),
-  proposingPoliticians: z.array(z.string()),
-  documentType: z.string().nullable(),
-  isPartialContent: z.boolean(),
-  contentLength: z.number(),
-  availableDocuments: z.array(z.string())
-});
-
 // Define base schemas
 const CommitteeSchema = z.object({
   id: z.string(),

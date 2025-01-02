@@ -2,16 +2,8 @@ import { type Session } from "next-auth";
 import { useState } from "react";
 import {
   Dialog,
-  DialogBackdrop,
   DialogPanel,
-  DialogTitle,
-  Transition
-} from "@headlessui/react";
-import {
-  Combobox,
-  ComboboxInput,
-  ComboboxOptions,
-  ComboboxOption,
+  DialogTitle
 } from "@headlessui/react";
 import {
   Listbox,
@@ -25,7 +17,7 @@ import {
   MagnifyingGlassIcon,
 } from "@heroicons/react/24/outline";
 import { CheckIcon, ChevronDownIcon } from "@heroicons/react/20/solid";
-import { Drawer, DrawerSection, DrawerList, type DrawerListItem } from "../drawer/Drawer";
+import { DrawerSection } from "../drawer/Drawer";
 import { api } from "~/trpc/react";
 import DrawerSections from "./CaseDocumentContent";
 
