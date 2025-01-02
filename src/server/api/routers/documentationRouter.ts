@@ -27,12 +27,13 @@ export const documentRouter = createTRPCRouter({
         throw new Error("Failed to fetch case data");
       }
 
-      // Explicitly type the result of response.json()
-      const data: CaseResponseType = await response.json();
-      
+      // Explicit type assertion for response.json()
+      const data = (await response.json()) as CaseResponseType;
+
+      // Validate with Zod
       const parsedData = CaseResponse.parse(data);
 
-      // Use an object to deduplicate by eksport_id
+      // Deduplicate by eksport_id
       const uniqueDocs = parsedData.publikasjon_referanse_liste.reduce<
         Record<string, { id: string; text: string; type: number }>
       >((acc, ref) => {
