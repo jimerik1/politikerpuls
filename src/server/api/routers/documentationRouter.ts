@@ -29,7 +29,7 @@ export const documentRouter = createTRPCRouter({
       const parsedData = CaseResponse.parse(data);
       
       // Use an object to deduplicate by eksport_id
-      const uniqueDocs = parsedData.publikasjon_referanse_liste.reduce((acc, ref) => {
+      const uniqueDocs = parsedData.publikasjon_referanse_liste.reduce((acc: Record<string, { id: string, text: string, type: number }>, ref) => {
         if (ref.eksport_id) {
           acc[ref.eksport_id] = {
             id: ref.eksport_id,
@@ -38,8 +38,8 @@ export const documentRouter = createTRPCRouter({
           };
         }
         return acc;
-      }, {} as Record<string, { id: string; text: string; type: number; }>);
-
+      }, {});
+      
       return { 
         documentIds: Object.values(uniqueDocs)
       };
