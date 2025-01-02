@@ -6,12 +6,14 @@ const PublicationReference = z.object({
   type: z.number(),
   lenke_tekst: z.string(),
   lenke_url: z.string(),
-  undertype: z.string().nullable()
+  undertype: z.string().nullable(),
 });
 
 const CaseResponse = z.object({
-  publikasjon_referanse_liste: z.array(PublicationReference)
+  publikasjon_referanse_liste: z.array(PublicationReference),
 });
+
+type CaseResponseType = z.infer<typeof CaseResponse>;
 
 export const documentRouter = createTRPCRouter({
   getDocumentIds: publicProcedure
@@ -25,24 +27,27 @@ export const documentRouter = createTRPCRouter({
         throw new Error("Failed to fetch case data");
       }
 
-      const data = await response.json();
-      const parsedData = CaseResponse.parse(data);
+      // Explicitly type the result of response.json()
+      const data: CaseResponseType = await response.json();
       
+      const parsedData = CaseResponse.parse(data);
+
       // Use an object to deduplicate by eksport_id
-      const uniqueDocs = parsedData.publikasjon_referanse_liste.reduce<Record<string, { id: string, text: string, type: number }>>((acc, ref) => {
+      const uniqueDocs = parsedData.publikasjon_referanse_liste.reduce<
+        Record<string, { id: string; text: string; type: number }>
+      >((acc, ref) => {
         if (ref.eksport_id) {
           acc[ref.eksport_id] = {
             id: ref.eksport_id,
             text: ref.lenke_tekst,
-            type: ref.type
+            type: ref.type,
           };
         }
         return acc;
       }, {});
-      
-      
-      return { 
-        documentIds: Object.values(uniqueDocs)
+
+      return {
+        documentIds: Object.values(uniqueDocs),
       };
-    })
+    }),
 });
