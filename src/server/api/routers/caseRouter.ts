@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { createTRPCRouter, protectedProcedure } from "~/server/api/trpc";
 
+
 interface StortingetApiResponse {
   tittel?: string;
   korttittel?: string;
@@ -24,6 +25,19 @@ interface StortingetApiResponse {
   }>;
 }
 
+
+const DocumentContentSchema = z.object({
+  chapterText: z.array(z.string()),
+  committeeText: z.string().nullable(),
+  proposalText: z.string().nullable(),
+  decision: z.string().nullable(),
+  proposingPoliticians: z.array(z.string()),
+  documentType: z.string().nullable(),
+  isPartialContent: z.boolean(),
+  contentLength: z.number(),
+  availableDocuments: z.array(z.string())
+});
+
 // Define base schemas
 const CommitteeSchema = z.object({
   id: z.string(),
@@ -42,24 +56,6 @@ const CaseTopicSchema = z.object({
   Topic: z.array(TopicSchema).optional(),
 });
 
-// Schema for detailed case from external API
-const DetailedCaseSchema = z.object({
-  title: z.string().nullable(),
-  shortTitle: z.string().nullable(),
-  reference: z.string().nullable(),
-  status: z.string().nullable(),
-  caseType: z.string().nullable(),
-  description: z.string().nullable(),
-  summary: z.string().nullable(),
-  proposedBy: z.string().nullable(),
-  committee: z.string().nullable(),
-  topics: z.array(
-    z.object({
-      name: z.string(),
-      isMainTopic: z.boolean(),
-    })
-  ).nullable(),
-});
 
 // Define the response type for getAll and search endpoints
 const CaseResponseSchema = z.object({
@@ -332,4 +328,6 @@ export const caseRouter = createTRPCRouter({
 
       return events;
     }),
+
+
 });

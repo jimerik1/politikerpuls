@@ -27,7 +27,7 @@ import {
 import { CheckIcon, ChevronDownIcon } from "@heroicons/react/20/solid";
 import { Drawer, DrawerSection, DrawerList, type DrawerListItem } from "../drawer/Drawer";
 import { api } from "~/trpc/react";
-import CaseDetails from './CaseDetails';
+import DrawerSections from "./CaseDocumentContent";
 
 interface CaseItem {
   id: string;
@@ -54,19 +54,6 @@ interface SakerContentProps {
   session: Session;
 }
 
-function truncateText(text: string, maxLength: number) {
-  if (text.length <= maxLength) return text;
-  return text.slice(0, maxLength) + "...";
-}
-
-function getDrawerItemsForCase(sak: CaseItem): DrawerListItem[] {
-  return [
-    { label: "Status", value: sak.status ?? "Ukjent" },
-    { label: "Referanse", value: sak.reference ?? "Mangler" },
-    { label: "Tema", value: sak.mainTopic?.name ?? "Ukjent tema" },
-  ];
-}
-
 const SakerContent = ({ session }: SakerContentProps) => {
   const [query, setQuery] = useState("");
   const [searchOpen, setSearchOpen] = useState(false);
@@ -75,6 +62,37 @@ const SakerContent = ({ session }: SakerContentProps) => {
   const [selectedType, setSelectedType] = useState<string | null>(null);
   const [selectedTopicId, setSelectedTopicId] = useState<string | null>(null);
 
+  function DocumentContent({ stortingetId }: { stortingetId: string }) {
+    const { data, isLoading } = api.document.getDocumentIds.useQuery({ stortingetId });
+  
+    if (isLoading) {
+      return <div className="text-gray-500">Laster dokumenter...</div>;
+    }
+  
+    if (!data?.documentIds.length) {
+      return <div className="text-gray-500">Ingen dokumenter funnet</div>;
+    }
+  
+    return (
+      <div className="space-y-4">
+        <h3 className="text-base font-semibold leading-6 text-gray-900">
+          Dokumenter i saken
+        </h3>
+        <ul className="list-disc pl-5 space-y-2">
+          {data.documentIds.map((doc) => (
+            <li key={doc.id} className="text-gray-600">
+              {doc.text} (Type: {doc.type})
+              <span className="block text-sm text-gray-400">ID: {doc.id}</span>
+            </li>
+          ))}
+        </ul>
+      </div>
+    );
+  }
+
+
+  
+    
   // Fetch topics
   const { data: topics } = api.topic.getAll.useQuery();
 
@@ -85,15 +103,6 @@ const SakerContent = ({ session }: SakerContentProps) => {
     type: selectedType,
     topicId: selectedTopicId,
   });
-
-  // Fetch case details
-  
-  
-  // Search cases
-  const { data: searchResults } = api.case.search.useQuery(
-    { query, limit: 10 },
-    { enabled: query.length > 0 }
-  );
 
   // Get unique case types for filtering
   const caseTypes = Array.from(
@@ -237,12 +246,26 @@ const SakerContent = ({ session }: SakerContentProps) => {
             ? new Date(sak.proposedDate).toLocaleDateString('nb-NO') 
             : 'Ikke satt'}
         </td>
-        <td className="whitespace-nowrap py-4 pl-6 pr-3 text-sm text-gray-900">
-          {truncateText(sak.shortTitle ?? sak.fullTitle ?? "Uten tittel", 50)}
-        </td>
-        <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-500">
+        <td className="py-4 pl-6 pr-3 text-sm text-gray-900">
+        <span className="max-w-xs block break-words">
+          {sak.shortTitle ?? sak.fullTitle ?? "Uten tittel"}
+        </span>
+      </td>
+
+
+
+
+        <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-500 relative group">
+        <span>{sak.committee?.id ?? ""}</span>
+        <span className="invisible opacity-0 group-hover:visible group-hover:opacity-100 transition-opacity duration-150 delay-500 
+          absolute z-50 px-3 py-2 text-sm font-medium text-white bg-gray-900 rounded-lg 
+          -translate-y-full -translate-x-1/2 left-1/2 top-0 mt-[-8px]
+          after:content-[''] after:absolute after:left-1/2 after:top-[100%] after:-translate-x-1/2 
+          after:border-8 after:border-x-transparent after:border-b-transparent after:border-t-gray-900">
           {sak.committee?.name ?? "Ukjent komité"}
-        </td>
+        </span>
+      </td>
+
         <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-500 inline-flex items-center gap-2">
           <FolderIcon className="h-5 w-5 text-blue-500" aria-hidden="true" />
           <MagnifyingGlassIcon className="h-5 w-5 text-green-500" aria-hidden="true" />
@@ -314,34 +337,72 @@ const SakerContent = ({ session }: SakerContentProps) => {
             <div className="flex-1 px-4 py-6 sm:px-6">
               {selectedCase && (
                 <div className="flex h-full gap-6">
-                  {/* Left column - Text content */}
-                  <div className="flex-1 overflow-y-auto rounded-lg border border-gray-200 bg-white">
-                    <div className="p-6">
-                      <h3 className="text-base font-semibold leading-6 text-gray-900">
-                        Saksdetaljer
-                      </h3>
-                      <div className="mt-4 text-sm text-gray-500 prose">
-                        <p>
-                        <CaseDetails stortingetId={selectedCase.stortingetId} />
-                        </p>
-                        {/* Add more content here as needed */}
+                      {/* Left column - Text content */}
+                      <div className="flex-1 overflow-y-auto rounded-lg border border-gray-200 bg-white">
+                        <div className="p-6 space-y-8">
+                          {/* Main section */}
+                          <div>
+                            <h3 className="text-base font-semibold leading-6 text-gray-900">
+                              Saksdetaljer
+                            </h3>
+                            
+                            {/* Document content */}
+                            <div className="mt-4">
+                            {selectedCase && (
+                        <DocumentContent stortingetId={selectedCase.stortingetId} />
+)}
+
+                            </div>
+                          </div>
+
+                          {/* Background section */}
+                          <div>
+                            <h4 className="text-sm font-semibold leading-6 text-gray-900 mb-4">
+                              Bakgrunn og innhold
+                            </h4>
+                            <div className="prose prose-sm max-w-none text-gray-600">
+                              {/* Background text will be rendered here */}
+                            </div>
+                          </div>
+
+                          {/* Proposal section */}
+                          <div>
+                            <h4 className="text-sm font-semibold leading-6 text-gray-900 mb-4">
+                              Forslag til vedtak
+                            </h4>
+                            <div className="prose prose-sm max-w-none text-gray-600">
+                              {/* Proposal text will be rendered here */}
+                            </div>
+                          </div>
+
+                          {/* Committee section */}
+                          <div>
+                            <h4 className="text-sm font-semibold leading-6 text-gray-900 mb-4">
+                              Komiteens merknad
+                            </h4>
+                            <div className="prose prose-sm max-w-none text-gray-600">
+                              {/* Committee text will be rendered here */}
+                            </div>
+                          </div>
+
+                          {/* Politicians section */}
+                          <div>
+                            <h4 className="text-sm font-semibold leading-6 text-gray-900 mb-4">
+                              Forslagsstillere
+                            </h4>
+                            <div className="flex flex-wrap gap-2">
+                              {/* Politicians will be rendered here */}
+                            </div>
+                          </div>
+                        </div>
                       </div>
-                    </div>
-                  </div>
+
 
                   {/* Right column - Overview list */}
                   <div className="w-96 flex-none">
                     <DrawerSection title="Oversikt">
-                      <DrawerList
-                        items={[
-                          { label: "Status", value: selectedCase.status ?? "Ukjent" },
-                          { label: "Tema", value: selectedCase.mainTopic?.name ?? "Ukjent tema" },
-                          { label: "Komité", value: selectedCase.committee?.name ?? "Ukjent komité" },
-                          { label: "Dokumentgruppe", value: selectedCase.documentGroup ?? "Ikke spesifisert" },
-                          { label: "Referanse", value: selectedCase.reference ?? "Mangler" },
-                        ]}
-                      />
-                    </DrawerSection>
+                    <DrawerSections selectedCase={selectedCase} />                    </DrawerSection>
+                    
                   </div>
                 </div>
               )}
