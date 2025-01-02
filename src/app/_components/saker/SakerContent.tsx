@@ -104,15 +104,6 @@ const SakerContent = ({ session }: SakerContentProps) => {
     topicId: selectedTopicId,
   });
 
-  // Fetch case details
-  
-  
-  // Search cases
-  const { data: searchResults } = api.case.search.useQuery(
-    { query, limit: 10 },
-    { enabled: query.length > 0 }
-  );
-
   // Get unique case types for filtering
   const caseTypes = Array.from(
     new Set(data?.items.map((item) => item.type).filter((type) => type))
