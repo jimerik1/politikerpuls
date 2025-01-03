@@ -8,6 +8,26 @@ interface DocumentReference {
   type: number;
 }
 
+interface TimelineEvent {
+  stepName: string;
+  date: Date;
+  documentUrl?: string;
+}
+
+interface CaseManager {
+  firstName: string;
+  lastName: string;
+  party: { name: string };
+  county: { name: string };
+}
+
+interface CaseDetails {
+  isComplete: boolean;
+  currentStep: string;
+  timeline: TimelineEvent[];
+  caseManager?: CaseManager;
+}
+
 interface DocumentReferencesProps {
   stortingetId: string;
 }
@@ -72,7 +92,7 @@ const DocumentReferences: React.FC<DocumentReferencesProps> = ({ stortingetId })
 const DrawerSections: React.FC<DrawerSectionsProps> = ({ selectedCase }) => {
   const { data: caseDetails, isLoading: isLoadingDetails } = api.case.getCaseDetails.useQuery({ 
     stortingetId: selectedCase.stortingetId 
-  });
+  }) as { data: CaseDetails | undefined; isLoading: boolean };
 
   return (
     <div className="space-y-6">
@@ -112,12 +132,12 @@ const DrawerSections: React.FC<DrawerSectionsProps> = ({ selectedCase }) => {
               <div className="mt-4 border-t pt-4">
                 <h4 className="text-sm font-medium text-gray-900 mb-3">Tidslinje</h4>
                 <div className="space-y-3">
-                  {caseDetails.timeline.map((event: { stepName: string | number | bigint | boolean | React.ReactElement<any, string | React.JSXElementConstructor<any>> | Iterable<React.ReactNode> | React.ReactPortal | Promise<React.AwaitedReactNode> | null | undefined; date: { toLocaleDateString: (arg0: string) => string | number | bigint | boolean | React.ReactElement<any, string | React.JSXElementConstructor<any>> | Iterable<React.ReactNode> | React.ReactPortal | Promise<React.AwaitedReactNode> | null | undefined; }; documentUrl: string | undefined; }, index: React.Key | null | undefined) => (
+                  {caseDetails.timeline.map((event: TimelineEvent, index: number) => (
                     <div key={index} className="flex justify-between items-start text-sm">
                       <div>
                         <p className="font-medium text-gray-900">{event.stepName}</p>
                         <p className="text-gray-500">
-                          {event.date?.toLocaleDateString('no')}
+                          {event.date.toLocaleDateString('no')}
                         </p>
                       </div>
                       {event.documentUrl && (
