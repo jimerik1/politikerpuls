@@ -4,15 +4,9 @@ import DashboardLayout from "../../_components/authorized/DashboardLayout";
 import CaseDetailsContent from "./CaseDetailsContent";
 import { api } from "~/trpc/server";
 
-interface PageParams {
-  id: string;
-}
+type Params = Promise<{ id: string }>;
 
-interface Props {
-  params: PageParams;
-}
-
-export default async function CaseDetailsPage({ params }: Props) {
+export default async function CaseDetailsPage({ params }: { params: Params }) {
   const { id } = await params;
   const session = await auth();
 
