@@ -72,7 +72,7 @@ const tabs = [aiTab, ...regularDocs, ...stortingsreferatDocs];
     return (
       <div className="prose prose-sm max-w-none">
         <p className="text-gray-600 mb-4">
-          Document ID: {tabId}
+          Dokument ID: {tabId}
         </p>
         {!documentContents[tabId] ? (
           <button

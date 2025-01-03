@@ -55,33 +55,6 @@ const SakerContent = ({ session }: SakerContentProps) => {
   const [selectedType, setSelectedType] = useState<string | null>(null);
   const [selectedTopicId, setSelectedTopicId] = useState<string | null>(null);
 
-  function DocumentContent({ stortingetId }: { stortingetId: string }) {
-    const { data, isLoading } = api.document.getDocumentIds.useQuery({ stortingetId });
-  
-    if (isLoading) {
-      return <div className="text-gray-500">Laster dokumenter...</div>;
-    }
-  
-    if (!data?.documentIds.length) {
-      return <div className="text-gray-500">Ingen dokumenter funnet</div>;
-    }
-  
-    return (
-      <div className="space-y-4">
-        <h3 className="text-base font-semibold leading-6 text-gray-900">
-          Dokumenter i saken
-        </h3>
-        <ul className="list-disc pl-5 space-y-2">
-          {data.documentIds.map((doc) => (
-            <li key={doc.id} className="text-gray-600">
-              {doc.text} (Type: {doc.type})
-              <span className="block text-sm text-gray-400">ID: {doc.id}</span>
-            </li>
-          ))}
-        </ul>
-      </div>
-    );
-  }
 
 
   
@@ -368,7 +341,7 @@ const SakerContent = ({ session }: SakerContentProps) => {
 
                   {/* Right column - Overview list */}
                   <div className="w-96 flex-none">
-                    <DrawerSection title="Oversikt">
+                    <DrawerSection>
                     <DrawerSections selectedCase={selectedCase} />                    </DrawerSection>
                     
                   </div>
