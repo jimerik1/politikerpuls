@@ -1,5 +1,4 @@
 import { ChevronDownIcon } from '@heroicons/react/24/solid';
-import type { StortingsPeriod } from './types';
 import { STORTINGS_PERIODS } from './types';
 
 interface PeriodSelectorProps {

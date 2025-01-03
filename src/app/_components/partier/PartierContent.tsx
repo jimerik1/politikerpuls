@@ -3,7 +3,7 @@ import { useState } from "react";
 import { Dialog, DialogBackdrop, DialogPanel } from "@headlessui/react";
 import { Combobox, ComboboxInput, ComboboxOptions, ComboboxOption } from "@headlessui/react";
 import { XMarkIcon, UsersIcon, MagnifyingGlassIcon } from "@heroicons/react/24/outline";
-import { Drawer, DrawerSection, DrawerList, type DrawerListItem } from "../drawer/Drawer";
+import { DrawerSection, DrawerList, type DrawerListItem } from "../drawer/Drawer";
 import { api } from "~/trpc/react";
 
 // Updated interface to match Prisma schema and PartyRouter

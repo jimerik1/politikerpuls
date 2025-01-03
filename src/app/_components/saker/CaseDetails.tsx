@@ -1,23 +1,5 @@
 import { api } from "~/trpc/react";
 
-interface CaseTopicDetails {
-  name: string;
-  isMainTopic: boolean;
-}
-
-interface CaseDetailsData {
-  title: string | null;
-  shortTitle: string | null;
-  reference: string | null;
-  status: string | null;
-  caseType: string | null;
-  description: string | null;
-  summary: string | null;
-  proposedBy: string | null;
-  committee: string | null;
-  topics: CaseTopicDetails[] | null;
-}
-
 const CaseDetails = ({ stortingetId }: { stortingetId: string }) => {
   const { data: caseDetails, isLoading, error } = api.case.getDetailedCase.useQuery(
     { stortingetId },
