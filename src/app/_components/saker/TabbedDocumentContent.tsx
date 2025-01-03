@@ -36,7 +36,7 @@ const TabbedDocumentContent: React.FC<TabbedDocumentContentProps> = ({ stortinge
     id: doc.id,
     text: doc.text,
     type: doc.type,
-  })) || [];
+  })) ?? [];
 
   // Split into regular docs and stortingsreferat (type 10)
 const regularDocs = documentTabs.filter(doc => doc.type !== 10);
@@ -93,7 +93,7 @@ const tabs = [aiTab, ...regularDocs, ...stortingsreferatDocs];
         ) : (
           <div 
             className="mt-4 prose prose-sm max-w-none"
-            dangerouslySetInnerHTML={{ __html: documentContents[tabId] || '' }}
+            dangerouslySetInnerHTML={{ __html: documentContents[tabId] ?? '' }}
           />
         )}
       </div>
