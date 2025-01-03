@@ -4,34 +4,34 @@ import DashboardLayout from "../../_components/authorized/DashboardLayout";
 import CaseDetailsContent from "./CaseDetailsContent";
 import { api } from "~/trpc/server";
 
-type Props = {
-    params: { id: string };
-    searchParams: { [key: string]: string | string[] | undefined }
+interface PageParams {
+  id: string;
+}
+
+interface Props {
+  params: PageParams;
+}
+
+export default async function CaseDetailsPage({ params }: Props) {
+  const { id } = await params;
+  const session = await auth();
+
+  if (!session) {
+    redirect("/api/auth/signin");
   }
-  
-  export default async function Page({ 
-    params: promiseParams,
-    searchParams 
-  }: Props) {
-    const session = await auth();
-    const params = await promiseParams;
-    
-    if (!session) {
-      redirect("/api/auth/signin");
-    }
-  
-    const caseDetails = await api.case.getDetailedCase({ stortingetId: params.id });
-  
-    if (!caseDetails) {
-      notFound();
-    }
-  
-    return (
-      <DashboardLayout session={session}>
-        <CaseDetailsContent 
-          caseDetails={{ ...caseDetails, stortingetId: params.id }} 
-          session={session} 
-        />
-      </DashboardLayout>
-    );
+
+  const caseDetails = await api.case.getDetailedCase({ stortingetId: id });
+
+  if (!caseDetails) {
+    notFound();
   }
+
+  return (
+    <DashboardLayout session={session}>
+      <CaseDetailsContent
+        caseDetails={{ ...caseDetails, stortingetId: id }}
+        session={session}
+      />
+    </DashboardLayout>
+  );
+}
