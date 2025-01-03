@@ -33,9 +33,14 @@ const DocumentReferences: React.FC<DocumentReferencesProps> = ({ stortingetId })
 
   if (isLoading || !data?.documentIds?.length) return null;
 
+  const regularDocs = data.documentIds.filter(doc => doc.type !== 10);
+  const stortingsreferatDocs = data.documentIds.filter(doc => doc.type === 10);
+  const sortedDocs = [...regularDocs, ...stortingsreferatDocs];
+
   return (
     <div>
-      {data.documentIds.map((doc: DocumentReference) => (
+      
+      {sortedDocs.map((doc: DocumentReference) => (
         <div key={doc.id} className="group relative">
           <a
             href={`https://data.stortinget.no/eksport/publikasjon?publikasjonid=${doc.id}`}

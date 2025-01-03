@@ -20,6 +20,7 @@ import { CheckIcon, ChevronDownIcon } from "@heroicons/react/20/solid";
 import { DrawerSection } from "../drawer/Drawer";
 import { api } from "~/trpc/react";
 import DrawerSections from "./CaseDocumentContent";
+import TabbedDocumentContent from './TabbedDocumentContent';
 
 interface CaseItem {
   id: string;
@@ -339,53 +340,28 @@ const SakerContent = ({ session }: SakerContentProps) => {
                             </h3>
                             
                             {/* Document content */}
-                            <div className="mt-4">
-                            {selectedCase && (
-                        <DocumentContent stortingetId={selectedCase.stortingetId} />
-)}
+                            {/* Document content */}
+<div className="mt-4">
+  {selectedCase && (
+    <TabbedDocumentContent stortingetId={selectedCase.stortingetId} />
+  )}
+</div>
 
-                            </div>
                           </div>
 
                           {/* Background section */}
-                          <div>
-                            <h4 className="text-sm font-semibold leading-6 text-gray-900 mb-4">
-                              Bakgrunn og innhold
-                            </h4>
-                            <div className="prose prose-sm max-w-none text-gray-600">
-                              {/* Background text will be rendered here */}
-                            </div>
-                          </div>
+                        
 
                           {/* Proposal section */}
-                          <div>
-                            <h4 className="text-sm font-semibold leading-6 text-gray-900 mb-4">
-                              Forslag til vedtak
-                            </h4>
-                            <div className="prose prose-sm max-w-none text-gray-600">
-                              {/* Proposal text will be rendered here */}
-                            </div>
-                          </div>
+                         
 
                           {/* Committee section */}
-                          <div>
-                            <h4 className="text-sm font-semibold leading-6 text-gray-900 mb-4">
-                              Komiteens merknad
-                            </h4>
-                            <div className="prose prose-sm max-w-none text-gray-600">
-                              {/* Committee text will be rendered here */}
-                            </div>
-                          </div>
+                         
 
                           {/* Politicians section */}
-                          <div>
-                            <h4 className="text-sm font-semibold leading-6 text-gray-900 mb-4">
-                              Forslagsstillere
-                            </h4>
-                            <div className="flex flex-wrap gap-2">
-                              {/* Politicians will be rendered here */}
-                            </div>
-                          </div>
+                          
+
+                          
                         </div>
                       </div>
 
