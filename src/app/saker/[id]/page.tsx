@@ -3,22 +3,24 @@ import { auth } from "~/server/auth";
 import DashboardLayout from "../../_components/authorized/DashboardLayout";
 import CaseDetailsContent from "./CaseDetailsContent";
 import { api } from "~/trpc/server";
-import { Metadata } from "next";
 
 type Props = {
-    params: { id: string }
+    params: { id: string };
     searchParams: { [key: string]: string | string[] | undefined }
   }
   
-  export default async function Page({ params, searchParams }: Props) {
+  export default async function Page({ 
+    params: promiseParams,
+    searchParams 
+  }: Props) {
     const session = await auth();
-    const { id } = await params;
+    const params = await promiseParams;
     
     if (!session) {
       redirect("/api/auth/signin");
     }
   
-    const caseDetails = await api.case.getDetailedCase({ stortingetId: id });
+    const caseDetails = await api.case.getDetailedCase({ stortingetId: params.id });
   
     if (!caseDetails) {
       notFound();
@@ -27,7 +29,7 @@ type Props = {
     return (
       <DashboardLayout session={session}>
         <CaseDetailsContent 
-          caseDetails={{ ...caseDetails, stortingetId: id }} 
+          caseDetails={{ ...caseDetails, stortingetId: params.id }} 
           session={session} 
         />
       </DashboardLayout>
