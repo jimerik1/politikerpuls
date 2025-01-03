@@ -1,6 +1,7 @@
 import React from 'react';
 import { api } from "~/trpc/react";
 import { DrawerSection, DrawerList, type DrawerListItem } from "../drawer/Drawer";
+import Timeline from './Timeline';
 
 interface DocumentReference {
   id: string;
@@ -99,7 +100,6 @@ const DrawerSections: React.FC<DrawerSectionsProps> = ({ selectedCase }) => {
       <DrawerSection title="Oversikt">
         <DrawerList
           items={[
-            { label: "Status", value: selectedCase.status ?? "Ukjent" },
             { label: "Tema", value: selectedCase.mainTopic?.name ?? "Ukjent tema" },
             { label: "Komité", value: selectedCase.committee?.name ?? "Ukjent komité" },
             { label: "Dokumentgruppe", value: selectedCase.documentGroup ?? "Ikke spesifisert" },
@@ -108,57 +108,31 @@ const DrawerSections: React.FC<DrawerSectionsProps> = ({ selectedCase }) => {
         />
       </DrawerSection>
 
-      <DrawerSection title="Dokumentreferanser">
+{/*       <DrawerSection title="Dokumentreferanser">
         <DocumentReferences stortingetId={selectedCase.stortingetId} />
-      </DrawerSection>
+      </DrawerSection> */}
 
       {!isLoadingDetails && caseDetails && (
         <>
-          <DrawerSection title="Saksgang">
-            <div className="space-y-4">
-              <DrawerList
-                items={[
-                  { 
-                    label: "Status", 
-                    value: caseDetails.isComplete ? 'Ferdigbehandlet' : 'Under behandling'
-                  },
-                  {
-                    label: "Nåværende steg",
-                    value: caseDetails.currentStep
-                  }
-                ]}
-              />
-              
-              <div className="mt-4 border-t pt-4">
-                <h4 className="text-sm font-medium text-gray-900 mb-3">Tidslinje</h4>
-                <div className="space-y-3">
-                  {caseDetails.timeline.map((event: TimelineEvent, index: number) => (
-                    <div key={index} className="flex justify-between items-start text-sm">
-                      <div>
-                        <p className="font-medium text-gray-900">{event.stepName}</p>
-                        <p className="text-gray-500">
-                          {event.date.toLocaleDateString('no')}
-                        </p>
-                      </div>
-                      {event.documentUrl && (
-                        <a 
-                          href={event.documentUrl}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-indigo-600 hover:text-indigo-900 text-sm font-medium"
-                        >
-                          Se dokument
-                        </a>
-                      )}
-                    </div>
-                  ))}
+              <DrawerSection title="Saksgang">
+                <div className="space-y-6">
+                  <DrawerList
+                    items={[
+                      { 
+                        label: "Status", 
+                        value: caseDetails.isComplete ? 'Ferdigbehandlet' : 'Under behandling'
+                      },
+                      {
+                        label: "Nåværende steg",
+                        value: caseDetails.currentStep
+                      }
+                    ]}
+                  />
                 </div>
-              </div>
-            </div>
-          </DrawerSection>
+              </DrawerSection>
 
-          {caseDetails.caseManager && (
-            <DrawerSection title="Saksbehandler">
+              {caseDetails.caseManager && (
+            <DrawerSection title="Fremført av">
               <DrawerList
                 items={[
                   { 
@@ -171,6 +145,10 @@ const DrawerSections: React.FC<DrawerSectionsProps> = ({ selectedCase }) => {
               />
             </DrawerSection>
           )}
+              
+              <DrawerSection title="Tidslinje">
+  <Timeline events={caseDetails.timeline} />
+</DrawerSection>
         </>
       )}
     </div>

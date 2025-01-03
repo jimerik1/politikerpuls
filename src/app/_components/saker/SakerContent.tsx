@@ -21,6 +21,7 @@ import { DrawerSection } from "../drawer/Drawer";
 import { api } from "~/trpc/react";
 import DrawerSections from "./CaseDocumentContent";
 import TabbedDocumentContent from './TabbedDocumentContent';
+import Link from "next/link";
 
 interface CaseItem {
   id: string;
@@ -241,15 +242,12 @@ const SakerContent = ({ session }: SakerContentProps) => {
           {sak.documentGroup ?? "Ikke spesifisert"}
         </td>
         <td className="whitespace-nowrap px-6 py-4 text-right text-sm font-medium">
-          <button
-            onClick={() => {
-              setSelectedCase(sak);
-              setDrawerOpen(true);
-            }}
+        <Link
+            href={`/saker/${sak.stortingetId}`}
             className="text-indigo-600 hover:text-indigo-900"
           >
             Detaljer
-          </button>
+          </Link>
         </td>
       </tr>
     ))}
@@ -261,99 +259,6 @@ const SakerContent = ({ session }: SakerContentProps) => {
 
       </div>
 
-{/* Details Dialog */}
-<Dialog open={drawerOpen} onClose={() => setDrawerOpen(false)} className="relative z-50">
-  <div className="fixed inset-0" />
-
-  <div className="fixed inset-0 overflow-hidden">
-    <div className="absolute inset-0 overflow-hidden">
-      <div className="pointer-events-none fixed inset-y-0 right-0 flex max-w-full pl-10 sm:pl-16">
-        <DialogPanel 
-          className={`pointer-events-auto w-screen max-w-full transform transition duration-700 ease-in-out ${
-            !drawerOpen ? 'translate-x-full' : 'translate-x-0'
-          }`}
-        >
-          <div className="flex h-full flex-col overflow-y-scroll bg-white shadow-xl">
-            {/* Header */}
-            <div className="bg-indigo-500 px-4 py-6 sm:px-6">
-              <div className="flex items-start justify-between space-x-3">
-                <div className="space-y-1">
-                  <DialogTitle className="text-base font-semibold leading-6 text-white">
-                    {selectedCase?.shortTitle ?? selectedCase?.fullTitle ?? "Uten tittel"}
-                  </DialogTitle>
-                  <p className="text-sm text-white">
-                    Detaljert informasjon om saken.
-                  </p>
-                </div>
-                <div className="flex h-7 items-center">
-                  <button
-                    type="button"
-                    onClick={() => setDrawerOpen(false)}
-                    className="relative text-gray-400 hover:text-gray-500"
-                  >
-                    <span className="absolute -inset-2.5" />
-                    <span className="sr-only">Lukk panel</span>
-                    <XMarkIcon className="h-6 w-6" aria-hidden="true" />
-                  </button>
-                </div>
-              </div>
-            </div>
-
-            {/* Content */}
-            <div className="flex-1 px-4 py-6 sm:px-6">
-              {selectedCase && (
-                <div className="flex h-full gap-6">
-                      {/* Left column - Text content */}
-                      <div className="flex-1 overflow-y-auto rounded-lg border border-gray-200 bg-white">
-                        <div className="p-6 space-y-8">
-                          {/* Main section */}
-                          <div>
-                            <h3 className="text-base font-semibold leading-6 text-gray-900">
-                              Saksdetaljer
-                            </h3>
-                            
-                            {/* Document content */}
-                            {/* Document content */}
-<div className="mt-4">
-  {selectedCase && (
-    <TabbedDocumentContent stortingetId={selectedCase.stortingetId} />
-  )}
-</div>
-
-                          </div>
-
-                          {/* Background section */}
-                        
-
-                          {/* Proposal section */}
-                         
-
-                          {/* Committee section */}
-                         
-
-                          {/* Politicians section */}
-                          
-
-                          
-                        </div>
-                      </div>
-
-
-                  {/* Right column - Overview list */}
-                  <div className="w-96 flex-none">
-                    <DrawerSection>
-                    <DrawerSections selectedCase={selectedCase} />                    </DrawerSection>
-                    
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
-        </DialogPanel>
-      </div>
-    </div>
-  </div>
-</Dialog>
     </div>
   );
 };

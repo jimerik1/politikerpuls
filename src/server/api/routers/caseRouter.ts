@@ -425,86 +425,126 @@ export const caseRouter = createTRPCRouter({
     }),
 
     getCaseDetails: protectedProcedure
-.input(z.object({ 
-  stortingetId: z.string()
-}))
-.query(async ({ input }) => {
-  try {
-    const response = await fetch(
-      `https://data.stortinget.no/eksport/sak?sakid=${input.stortingetId}&format=json`
-    );
-
-    if (!response.ok) throw new Error('Failed to fetch case details');
-    const data = (await response.json()) as SaksgangData;
-    
-    const timeline = data.saksgang.saksgang_steg_liste
-      .flatMap((step: SaksgangStep) => 
-        step.saksgang_hendelse_liste.map(event => ({
-          date: event.dato !== "01.01.0001 00:00:00" ? new Date(event.dato) : null,
-          stepName: step.navn,
-          eventId: event.id,
-          documentUrl: event.publikasjonsReferanse
-        }))
-      )
-      .filter((event) => event.date !== null)
-      .sort((a, b) => 
-        a.date && b.date ? a.date.getTime() - b.date.getTime() : 0
+  .input(z.object({ 
+    stortingetId: z.string()
+  }))
+  .query(async ({ input }) => {
+    try {
+      const response = await fetch(
+        `https://data.stortinget.no/eksport/sak?sakid=${input.stortingetId}&format=json`
       );
 
-    const currentStep = data.saksgang.saksgang_steg_liste
-      .find((step) => step.saksgang_hendelse_liste.some((event) => 
-        event.dato === "01.01.0001 00:00:00" || new Date(event.dato) > new Date()
-      ))?.navn ?? "Completed";
+      if (!response.ok) throw new Error('Failed to fetch case details');
+      const data = (await response.json()) as SaksgangData;
+      
+      // Process timeline events
+      type TimelineEvent = {
+        date: Date | null;
+        stepName: string;
+        eventId: string;
+        documentUrl: string;
+      };
 
-    return {
-      isComplete: data.ferdigbehandlet,
-      currentStep,
-      timeline,
-      topics: data.emne_liste?.map((topic) => ({
-        name: topic.navn,
-        isMainTopic: topic.er_hovedemne,
-        id: parseInt(topic.id, 10)  // Convert string to number
-          })) ?? [],
-      caseOrigin: {
-        proposedBy: data.sak_opphav?.forslagstiller_liste?.map((person) => ({
-          firstName: person.fornavn,
-          lastName: person.etternavn
-        })) ?? []
-      },
-      caseManager: data.saksordfoerer_liste?.[0] ? {
-        firstName: data.saksordfoerer_liste[0].fornavn,
-        lastName: data.saksordfoerer_liste[0].etternavn,
-        party: {
-          id: data.saksordfoerer_liste[0].parti.id,
-          name: data.saksordfoerer_liste[0].parti.navn
+      const timeline = data.saksgang.saksgang_steg_liste
+        .flatMap((step: SaksgangStep): TimelineEvent[] => {
+          const events = step.saksgang_hendelse_liste;
+          
+          // Group events by stepName into dated and undated
+          const eventsByStep = events.reduce((acc, event) => {
+            const hasDate = event.dato !== "01.01.0001 00:00:00";
+            if (hasDate) {
+              acc.dated.push({
+                date: new Date(event.dato),
+                stepName: step.navn,
+                eventId: event.id,
+                documentUrl: event.publikasjonsReferanse
+              });
+            } else {
+              acc.undated.push({
+                date: null,
+                stepName: step.navn,
+                eventId: event.id,
+                documentUrl: event.publikasjonsReferanse
+              });
+            }
+            return acc;
+          }, { dated: [], undated: [] } as { 
+            dated: Array<{
+              date: Date;
+              stepName: string;
+              eventId: string;
+              documentUrl: string;
+            }>;
+            undated: Array<{
+              date: null;
+              stepName: string;
+              eventId: string;
+              documentUrl: string;
+            }>;
+          });
+
+          // Only include undated event if no dated event exists for this step
+          return eventsByStep.dated.length > 0 ? eventsByStep.dated : eventsByStep.undated;
+        })
+        .sort((a, b) => 
+          a.date && b.date ? a.date.getTime() - b.date.getTime() : 0
+        );
+
+      // Find current step
+      const currentStep = data.saksgang.saksgang_steg_liste
+        .find((step) => step.saksgang_hendelse_liste.some((event) => 
+          event.dato === "01.01.0001 00:00:00" || new Date(event.dato) > new Date()
+        ))?.navn ?? "Completed";
+
+      return {
+        isComplete: data.ferdigbehandlet,
+        currentStep,
+        timeline,
+        topics: data.emne_liste?.map((topic) => ({
+          name: topic.navn,
+          isMainTopic: topic.er_hovedemne,
+          id: parseInt(topic.id, 10)
+        })) ?? [],
+        caseOrigin: {
+          proposedBy: data.sak_opphav?.forslagstiller_liste?.map((person) => ({
+            firstName: person.fornavn,
+            lastName: person.etternavn
+          })) ?? []
         },
-        county: {
-          id: data.saksordfoerer_liste[0].fylke.id,
-          name: data.saksordfoerer_liste[0].fylke.navn
+        caseManager: data.saksordfoerer_liste?.[0] ? {
+          firstName: data.saksordfoerer_liste[0].fornavn,
+          lastName: data.saksordfoerer_liste[0].etternavn,
+          party: {
+            id: data.saksordfoerer_liste[0].parti.id,
+            name: data.saksordfoerer_liste[0].parti.navn
+          },
+          county: {
+            id: data.saksordfoerer_liste[0].fylke.id,
+            name: data.saksordfoerer_liste[0].fylke.navn
+          }
+        } : undefined,
+        documentReferences: data.publikasjon_referanse_liste?.map((ref) => ({
+          text: ref.lenke_tekst,
+          url: ref.lenke_url,
+          type: ref.type,
+          subtype: ref.undertype
+        })) ?? [],
+        details: {
+          title: data.tittel ?? null,
+          shortTitle: data.korttittel ?? null,
+          reference: data.henvisning ?? null,
+          status: data.status ?? null,
+          caseType: data.type ?? null,
+          description: data.innstillingstekst ?? null,
+          summary: data.kortvedtak ?? null,
+          committee: data.komite?.navn ?? null
         }
-      } : undefined,
-      documentReferences: data.publikasjon_referanse_liste?.map((ref) => ({
-        text: ref.lenke_tekst,
-        url: ref.lenke_url,
-        type: ref.type,
-        subtype: ref.undertype
-      })) ?? [],
-      details: {
-        title: data.tittel ?? null,
-        shortTitle: data.korttittel ?? null,
-        reference: data.henvisning ?? null,
-        status: data.status ?? null,
-        caseType: data.type ?? null,
-        description: data.innstillingstekst ?? null,
-        summary: data.kortvedtak ?? null,
-        committee: data.komite?.navn ?? null
-      }
-    } satisfies CaseProgressDetails;
+      } satisfies CaseProgressDetails;
 
-  } catch (error) {
-    console.error('Error fetching case details:', error);
-    throw error;
-  }
-})
+    } catch (error) {
+      console.error('Error fetching case details:', error);
+      throw error;
+    }
+  })
 
 });
