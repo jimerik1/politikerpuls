@@ -2,15 +2,7 @@ import React, { useState } from 'react';
 import { ChevronDownIcon } from '@heroicons/react/20/solid';
 import { api } from "~/trpc/react";
 
-interface DocumentTab {
-  id: string;
-  text: string;
-  type: number;
-}
-
-interface DocumentContent {
-  [key: string]: string | null;
-}
+type DocumentContent = Record<string, string | null>;
 
 interface TabbedDocumentContentProps {
   stortingetId: string;
