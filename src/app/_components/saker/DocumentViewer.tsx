@@ -18,7 +18,7 @@ const DocumentViewer = ({ htmlContent }: DocumentViewerProps) => {
 
     // Helper function to get text content
     const getText = (element: Element | null): string => {
-      return element?.textContent?.trim() || '';
+      return element?.textContent?.trim() ?? '';
     };
 
     // Helper function to find elements by multiple possible selectors
