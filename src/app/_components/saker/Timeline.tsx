@@ -11,27 +11,87 @@ interface TimelineProps {
 }
 
 const Timeline: React.FC<TimelineProps> = ({ events }) => {
-  const getEventStatus = (eventDate: Date | null, index: number) => {
-    if (!eventDate) return 'upcoming';
+  // Deduplicate events - prefer events with dates over those without
+  const deduplicatedEvents = events.reduce((acc: TimelineEvent[], event) => {
+    const existingEventIndex = acc.findIndex(e => e.stepName === event.stepName);
     
-    const now = new Date();
-    const previousEvent = index > 0 ? events[index - 1] : null;
-    const previousDate = previousEvent?.date;
+    if (existingEventIndex === -1) {
+      // No duplicate found, add the event
+      acc.push(event);
+    } else if (existingEventIndex >= 0) {
+      // Duplicate found, keep the one with a date if possible
+      const existingEvent = acc[existingEventIndex];
+      // Explicitly check that existingEvent exists and compare dates
+      if (existingEvent && !existingEvent.date && event.date) {
+        // Replace the existing event without date with the new event that has a date
+        acc[existingEventIndex] = event;
+      }
+      // If the existing event has a date and new event doesn't, keep the existing one
+    }
+    
+    return acc;
+  }, []);
 
-    if (eventDate < now) return 'complete';
-    if (previousDate && previousDate < now && eventDate >= now) return 'current';
+  // Sort events to ensure specific order: "Forslag", "Komitebehandling", "Debatt og vedtak"
+  // When events have the same date, place "Referat" after other events
+  const eventOrder = ["Forslag", "Komitebehandling", "Debatt og vedtak"];
+  const sortedEvents = [...deduplicatedEvents].sort((a, b) => {
+    // First sort by the predefined order
+    const aIndex = eventOrder.indexOf(a.stepName);
+    const bIndex = eventOrder.indexOf(b.stepName);
+    
+    if (aIndex !== bIndex) {
+      return aIndex - bIndex;
+    }
+    
+    // If dates are different, sort by date
+    if (a.date && b.date && a.date.getTime() !== b.date.getTime()) {
+      return a.date.getTime() - b.date.getTime();
+    }
+    
+    // If dates are the same or both null, put Referat last
+    const aHasReferat = a.stepName.includes('Referat');
+    const bHasReferat = b.stepName.includes('Referat');
+    if (aHasReferat && !bHasReferat) return 1;
+    if (!aHasReferat && bHasReferat) return -1;
+    
+    return 0;
+  });
+
+  const getEventStatus = (event: TimelineEvent, index: number) => {
+    const now = new Date();
+    
+    // Find the index of the last completed event
+    const lastCompletedIndex = sortedEvents.reduce((lastIndex, currentEvent, currentIndex) => {
+      if (currentEvent.date && currentEvent.date < now) {
+        return currentIndex;
+      }
+      return lastIndex;
+    }, -1);
+    
+    // The event immediately after the last completed one is the current event
+    if (index === lastCompletedIndex + 1) {
+      return 'current';
+    }
+    
+    // Events before the current one are complete
+    if (index <= lastCompletedIndex) {
+      return 'complete';
+    }
+    
+    // All other events are upcoming
     return 'upcoming';
   };
 
   return (
     <nav aria-label="Progress">
       <ol role="list" className="overflow-hidden">
-        {events.map((event, eventIdx) => {
-          const status = getEventStatus(event.date, eventIdx);
+        {sortedEvents.map((event, eventIdx) => {
+          const status = getEventStatus(event, eventIdx);
           
           return (
-            <li key={eventIdx} className={eventIdx !== events.length - 1 ? 'pb-10 relative' : 'relative'}>
-              {eventIdx !== events.length - 1 && (
+            <li key={eventIdx} className={eventIdx !== sortedEvents.length - 1 ? 'pb-10 relative' : 'relative'}>
+              {eventIdx !== sortedEvents.length - 1 && (
                 <div 
                   aria-hidden="true" 
                   className={`absolute left-4 top-4 -ml-px mt-0.5 h-full w-0.5 ${
@@ -47,7 +107,7 @@ const Timeline: React.FC<TimelineProps> = ({ events }) => {
                     </span>
                   ) : status === 'current' ? (
                     <span className="relative z-10 flex size-8 items-center justify-center rounded-full border-2 border-indigo-600 bg-white">
-                      <span className="size-2.5 rounded-full bg-indigo-600" />
+                      <span className="relative z-10 flex size-4 items-center justify-center rounded-full bg-indigo-600" />
                     </span>
                   ) : (
                     <span className="relative z-10 flex size-8 items-center justify-center rounded-full border-2 border-gray-300 bg-white">
