@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { ChevronDownIcon } from '@heroicons/react/20/solid';
 import { api } from "~/trpc/react";
+import DocumentViewer from './DocumentViewer';  // Add this import
 
 type DocumentContent = Record<string, string | null>;
 
@@ -83,13 +84,13 @@ const tabs = [aiTab, ...regularDocs, ...stortingsreferatDocs];
             {loadingContent ? 'Laster...' : 'Last inn dokument'}
           </button>
         ) : (
-          <div 
-            className="mt-4 prose prose-sm max-w-none"
-            dangerouslySetInnerHTML={{ __html: documentContents[tabId] ?? '' }}
-          />
+            <DocumentViewer 
+            htmlContent={documentContents[tabId] ?? ''} 
+            />
         )}
       </div>
     );
+  
   };
 
   return (
@@ -145,5 +146,7 @@ const tabs = [aiTab, ...regularDocs, ...stortingsreferatDocs];
     </div>
   );
 };
+
+
 
 export default TabbedDocumentContent;

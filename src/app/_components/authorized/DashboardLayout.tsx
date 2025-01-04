@@ -10,6 +10,8 @@ import {
   Trophy as Trophy,
   Tag as Tag
 } from "lucide-react";
+import BreadcrumbNav from './BreadcrumbNav';
+
 
 interface DashboardLayoutProps {
   session: Session;
@@ -109,14 +111,13 @@ const DashboardLayout = ({ session, children }: DashboardLayoutProps) => {
       <div className="flex flex-1 flex-col">
         {/* Top Navigation */}
         <header className="bg-white p-4 shadow">
-          <div className="flex items-center justify-between">
-            <h2 className="text-xl font-semibold text-gray-800">Min Side</h2>
-            <div className="flex items-center space-x-4">
-              <span className="text-gray-600">Velkommen, {session.user?.name}</span>
-            </div>
+        <div className="flex items-center justify-between">
+          <BreadcrumbNav />
+          <div className="flex items-center space-x-4">
+            <span className="text-gray-600">Velkommen, {session.user?.name}</span>
           </div>
-        </header>
-
+        </div>
+      </header>
         {/* Main Content Area */}
         <main className="flex-1 overflow-y-auto p-6">
           {children}
