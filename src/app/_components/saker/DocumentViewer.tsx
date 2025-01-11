@@ -4,10 +4,16 @@ interface DocumentViewerProps {
   htmlContent: string;
 }
 
+interface TableData {
+  headers: string[];
+  rows: string[][];
+}
+
 interface Section {
-  type: 'header' | 'content' | 'proposal' | 'signature';
+  type: 'header' | 'content' | 'proposal' | 'signature' | 'table';
   title?: string;
-  content: string[];
+  content?: string[];
+  tableData?: TableData;
 }
 
 const DocumentViewer = ({ htmlContent }: DocumentViewerProps) => {
@@ -18,7 +24,7 @@ const DocumentViewer = ({ htmlContent }: DocumentViewerProps) => {
 
     // Helper function to get text content
     const getText = (element: Element | null): string => {
-      return element?.textContent?.trim() ?? '';
+      return element?.textContent?.trim() || '';
     };
 
     // Helper function to find elements by multiple possible selectors
@@ -52,6 +58,90 @@ const DocumentViewer = ({ htmlContent }: DocumentViewerProps) => {
         content: headerData
       });
     }
+
+    // Parse tables
+    const tableElements = findElements(['.strtngt_tbl', '.strtngt_table', 'table']);
+    tableElements.forEach(tableContainer => {
+      // Find the actual table element
+      const table = tableContainer.querySelector('.strtngt_table') || tableContainer;
+      const headers: string[] = [];
+      const rows: string[][] = [];
+
+      // Parse headers
+      const headerCells = table.querySelectorAll('thead td, thead th, .strtngt_thead td');
+      headerCells.forEach(cell => {
+        // Look for text within nested span with type_halvfet
+        const boldSpan = cell.querySelector('.strtngt_uth.type_halvfet');
+        let headerText = '';
+        
+        if (boldSpan) {
+          headerText = getText(boldSpan);
+        } else {
+          // Fallback to other possible header structures
+          const headerP = cell.querySelector('.type_head, .type_innrykk');
+          if (headerP) {
+            headerText = getText(headerP);
+          } else {
+            headerText = getText(cell);
+          }
+        }
+        
+        headerText = headerText.replace(/\s+/g, ' ').trim();
+        if (headerText) headers.push(headerText);
+      });
+
+      // Parse body rows
+      const bodyRows = table.querySelectorAll('tbody tr, .strtngt_tbody tr');
+      bodyRows.forEach(row => {
+        const rowData: string[] = [];
+        const cells = row.querySelectorAll('td');
+
+        cells.forEach(cell => {
+          let cellText = '';
+          let isRightAligned = false;
+          
+          // Find the paragraph element with alignment
+          const paragraph = cell.querySelector('.strtngt_a');
+          if (paragraph) {
+            isRightAligned = paragraph.classList.contains('align_right');
+            
+            // Check for special formatting classes
+            const boldText = paragraph.querySelector('.strtngt_uth.type_halvfet');
+            const italicText = paragraph.querySelector('.strtngt_uth.type_kursiv');
+            
+            if (boldText) {
+              cellText = getText(boldText);
+            } else if (italicText) {
+              cellText = getText(italicText);
+            } else {
+              cellText = getText(paragraph);
+            }
+          } else {
+            cellText = getText(cell);
+          }
+
+          cellText = cellText.replace(/\s+/g, ' ').trim();
+          
+          // Handle colspan
+          const colspan = parseInt(cell.getAttribute('colspan') || '1');
+          for (let i = 0; i < colspan; i++) {
+            rowData.push(cellText);
+          }
+        });
+
+        if (rowData.some(text => text !== '')) {
+          rows.push(rowData);
+        }
+      });
+
+      if (headers.length > 0 || rows.length > 0) {
+        sections.push({
+          type: 'table',
+          content: [],  // Empty array for table type
+          tableData: { headers, rows }
+        });
+      }
+    });
 
     // Parse main content sections
     const mainContentElements = findElements([
@@ -108,26 +198,46 @@ const DocumentViewer = ({ htmlContent }: DocumentViewerProps) => {
     // Parse proposal section
     const proposalElements = findElements([
       'ForslagTilVedtak',
+      'VedtakS',
       '.strtngt_forslagtilvedtak',
       'div[class*="forslag"]'
     ]);
-
+    
     proposalElements.forEach(proposal => {
       const title = getText(
         proposal.querySelector('Tittel, .title, h1, h2, h3')
       );
       
-      const paragraphs = Array.from(
-        proposal.querySelectorAll('A, p, li')
-      )
-        .map(el => getText(el))
-        .filter(Boolean);
-
-      if (paragraphs.length > 0) {
+      // Specifically handle Liste/Pkt structure
+      const listItems: string[] = [];
+      const listElements = proposal.querySelectorAll('Liste');
+      
+      listElements.forEach(list => {
+        const points = list.querySelectorAll('Pkt');
+        points.forEach(point => {
+          const text = getText(point.querySelector('A[Type="Innrykk"]'));
+          if (text) listItems.push(text);
+        });
+      });
+    
+      // If no list items found, try direct paragraphs
+      if (listItems.length === 0) {
+        const paragraphs = Array.from(
+          proposal.querySelectorAll('A[Type="Innrykk"], p, li')
+        )
+          .map(el => getText(el))
+          .filter(Boolean);
+        
+        if (paragraphs.length > 0) {
+          listItems.push(...paragraphs);
+        }
+      }
+    
+      if (listItems.length > 0) {
         sections.push({
           type: 'proposal',
           title: title || 'Forslag',
-          content: paragraphs
+          content: listItems
         });
       }
     });
@@ -207,12 +317,58 @@ const DocumentViewer = ({ htmlContent }: DocumentViewerProps) => {
         </h2>
       )}
       <div className="space-y-4">
-        {content.map((item, idx) => (
-          <p key={idx} className="text-gray-700 leading-relaxed">
-            {item}
-          </p>
-        ))}
+        {content.map((item, idx) => {
+          const hasNumber = /^\d+\./.test(item.trim());
+          return (
+            <p key={idx} className="text-gray-700 leading-relaxed pl-4">
+              {hasNumber ? item : `${idx + 1}. ${item}`}
+            </p>
+          );
+        })}
       </div>
+    </div>
+  );
+
+  const renderTable = (tableData: TableData) => (
+    <div className="overflow-x-auto mb-8">
+      <table className="min-w-full divide-y divide-gray-200">
+        <thead className="bg-gray-50">
+          <tr>
+            {tableData.headers.map((header, idx) => (
+              <th
+                key={idx}
+                className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+              >
+                {header}
+              </th>
+            ))}
+          </tr>
+        </thead>
+        <tbody className="bg-white divide-y divide-gray-200">
+          {tableData.rows.map((row, rowIdx) => (
+            <tr key={rowIdx} className={rowIdx % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
+              {row.map((cell, cellIdx) => {
+                // Check if the cell might be numeric (for right alignment)
+                // Check if the cell is numeric or explicitly right-aligned
+                const isNumeric = /^\d+([,. ]\d+)*$/.test(cell.trim());
+                const isRightAligned = cell.endsWith('___RIGHT___');
+                const cleanCell = cell.replace('___RIGHT___', '');
+                
+                return (
+                  <td
+                    key={cellIdx}
+                    className={`px-6 py-4 whitespace-pre-wrap text-sm text-gray-500 ${
+                      isNumeric || isRightAligned ? 'text-right' : 'text-left'
+                    }`}
+                  >
+                    {cleanCell}
+                  </td>
+                );
+              })}
+            </tr>
+          ))}
+        </tbody>
+      </table>
     </div>
   );
 
@@ -229,13 +385,15 @@ const DocumentViewer = ({ htmlContent }: DocumentViewerProps) => {
   const renderSection = (section: Section) => {
     switch (section.type) {
       case 'header':
-        return renderHeader(section.content);
+        return renderHeader(section.content || []);
       case 'content':
-        return renderContent(section.title, section.content);
+        return renderContent(section.title, section.content || []);
       case 'proposal':
-        return renderProposal(section.title, section.content);
+        return renderProposal(section.title, section.content || []);
       case 'signature':
-        return renderSignature(section.content);
+        return renderSignature(section.content || []);
+      case 'table':
+        return section.tableData ? renderTable(section.tableData) : null;
       default:
         return null;
     }

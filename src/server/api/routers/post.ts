@@ -15,16 +15,55 @@ export const postRouter = createTRPCRouter({
       };
     }),
 
-  create: protectedProcedure
-    .input(z.object({ name: z.string().min(1) }))
+    create: protectedProcedure
+    .input(z.object({ 
+      name: z.string().min(1),
+      caseId: z.string().optional()  // This will receive stortingetId
+    }))
     .mutation(async ({ ctx, input }) => {
       return ctx.db.post.create({
         data: {
           name: input.name,
-          createdBy: { connect: { id: ctx.session.user.id } },
+          createdBy: { 
+            connect: { id: ctx.session.user.id } 
+          },
+          ...(input.caseId ? {
+            case: {
+              connect: { stortingetId: input.caseId }  // Connect using stortingetId instead of id
+            }
+          } : {})
         },
       });
     }),
+
+    
+  
+    getByCaseId: protectedProcedure
+    .input(z.object({ caseId: z.string() }))
+    .query(async ({ ctx, input }) => {
+      const posts = await ctx.db.post.findMany({
+        where: { 
+          case: {
+            stortingetId: input.caseId
+          }
+        },
+        include: {
+          createdBy: {
+            select: {
+              name: true,
+              image: true
+            }
+          }
+        },
+        orderBy: { 
+          createdAt: "desc" 
+        },
+      });
+  
+      return posts;
+    }),
+  
+  
 
   getLatest: protectedProcedure.query(async ({ ctx }) => {
     const post = await ctx.db.post.findFirst({

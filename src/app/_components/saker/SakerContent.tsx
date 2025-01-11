@@ -55,21 +55,69 @@ const SakerContent = ({ session }: SakerContentProps) => {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [selectedType, setSelectedType] = useState<string | null>(null);
   const [selectedTopicId, setSelectedTopicId] = useState<string | null>(null);
+  const [selectedDocumentGroup, setSelectedDocumentGroup] = useState<string | null>(null);
 
 
-
-  
+//force capital first letter for filters
+  const capitalizeFirstLetter = (str: string) => {
+    if (!str) return str;
+    return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
+  };
     
   // Fetch topics
   const { data: topics } = api.topic.getAll.useQuery();
-
+  
   // Fetch cases with type and topic filters
   const { data, isLoading } = api.case.getAll.useQuery({
     limit: 200,
     cursor: undefined,
     type: selectedType,
     topicId: selectedTopicId,
+    documentGroup: selectedDocumentGroup, // Add this line
   });
+
+  const DocumentGroupFilter = () => {
+    // Get unique document groups
+    const documentGroups = Array.from(
+      new Set(data?.items.map((item) => item.documentGroup).filter(Boolean))
+    ) as string[];
+  
+    return (
+      <Listbox value={selectedDocumentGroup} onChange={setSelectedDocumentGroup}>
+        <div className="relative">
+          <div className="inline-flex divide-x divide-indigo-700 rounded-md">
+            <div className="inline-flex items-center gap-x-1.5 rounded-l-md bg-indigo-600 px-3 py-2 text-white">
+              <CheckIcon className="-ml-0.5 h-5 w-5" aria-hidden="true" />
+              <p className="text-sm font-semibold">
+              {selectedDocumentGroup ? capitalizeFirstLetter(selectedDocumentGroup) : "Alle dokumentgrupper"}
+              </p>
+            </div>
+            <ListboxButton className="inline-flex items-center rounded-l-none rounded-r-md bg-indigo-600 p-2 hover:bg-indigo-700">
+              <ChevronDownIcon className="h-5 w-5 text-white" aria-hidden="true" />
+            </ListboxButton>
+          </div>
+          <ListboxOptions className="absolute z-10 mt-2 w-72 origin-top-right divide-y divide-gray-200 overflow-hidden rounded-md bg-white shadow-lg ring-1 ring-black/5">
+            <ListboxOption
+              value={null}
+              className="cursor-default select-none p-4 text-sm text-gray-900 hover:bg-indigo-600 hover:text-white"
+            >
+              Alle dokumentgrupper
+            </ListboxOption>
+            {documentGroups.map((group) => (
+              <ListboxOption
+                key={group}
+                value={group}
+                className="cursor-default select-none p-4 text-sm text-gray-900 hover:bg-indigo-600 hover:text-white"
+              >
+                {capitalizeFirstLetter(group)}
+              </ListboxOption>
+            ))}
+          </ListboxOptions>
+        </div>
+      </Listbox>
+    );
+  };
+  
 
   // Get unique case types for filtering
   const caseTypes = Array.from(
@@ -83,7 +131,7 @@ const SakerContent = ({ session }: SakerContentProps) => {
           <div className="inline-flex items-center gap-x-1.5 rounded-l-md bg-indigo-600 px-3 py-2 text-white">
             <CheckIcon className="-ml-0.5 h-5 w-5" aria-hidden="true" />
             <p className="text-sm font-semibold">
-              {selectedType ?? "Alle typer"}
+            {selectedType ? capitalizeFirstLetter(selectedType) : "Alle typer"}
             </p>
           </div>
           <ListboxButton className="inline-flex items-center rounded-l-none rounded-r-md bg-indigo-600 p-2 hover:bg-indigo-700">
@@ -103,7 +151,7 @@ const SakerContent = ({ session }: SakerContentProps) => {
               value={type}
               className="cursor-default select-none p-4 text-sm text-gray-900 hover:bg-indigo-600 hover:text-white"
             >
-              {type}
+              {capitalizeFirstLetter(type)}
             </ListboxOption>
           ))}
         </ListboxOptions>
@@ -118,9 +166,10 @@ const SakerContent = ({ session }: SakerContentProps) => {
           <div className="inline-flex items-center gap-x-1.5 rounded-l-md bg-indigo-600 px-3 py-2 text-white">
             <CheckIcon className="-ml-0.5 h-5 w-5" aria-hidden="true" />
             <p className="text-sm font-semibold">
-              {selectedTopicId
-                ? topics?.find((t) => t.id === selectedTopicId)?.name ?? "Velg tema"
-                : "Alle tema"}
+            {selectedTopicId
+              ? capitalizeFirstLetter(topics?.find((t) => t.id === selectedTopicId)?.name ?? "Velg tema")
+              : "Alle tema"}
+
             </p>
           </div>
           <ListboxButton className="inline-flex items-center rounded-l-none rounded-r-md bg-indigo-600 p-2 hover:bg-indigo-700">
@@ -140,7 +189,7 @@ const SakerContent = ({ session }: SakerContentProps) => {
               value={topic.id}
               className="cursor-default select-none p-4 text-sm text-gray-900 hover:bg-indigo-600 hover:text-white"
             >
-              {topic.name}
+              {capitalizeFirstLetter(topic.name)}
             </ListboxOption>
           ))}
         </ListboxOptions>
@@ -177,6 +226,7 @@ const SakerContent = ({ session }: SakerContentProps) => {
             </button>
             <TopicFilter />
             <TypeFilter />
+            <DocumentGroupFilter /> 
           </div>
         </div>
 
