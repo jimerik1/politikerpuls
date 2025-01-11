@@ -15,16 +15,24 @@ datasource db {
 }
 
 model Post {
-    id        Int      @id @default(autoincrement())
-    name      String
-    createdAt DateTime @default(now())
-    updatedAt DateTime @updatedAt
+    id          Int       @id @default(autoincrement())
+    name        String
+    createdAt   DateTime  @default(now())
+    updatedAt   DateTime  @updatedAt
 
-    createdBy   User   @relation(fields: [createdById], references: [id])
+    createdBy   User      @relation(fields: [createdById], references: [id])
     createdById String
 
+    // Add these lines if they're missing:
+    case        Case?     @relation(fields: [caseId], references: [id])
+    caseId      String?
+
     @@index([name])
+    @@index([caseId])
 }
+
+
+
 
 // Necessary for Next auth
 model Account {
@@ -190,6 +198,7 @@ model Case {
     @@index([stortingetId])
     @@index([mainTopicId])
     @@index([rapporteurId])
+    Post Post[]
 }
 
 // New model to handle case proposers (many-to-many)

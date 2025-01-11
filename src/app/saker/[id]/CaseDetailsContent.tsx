@@ -23,15 +23,7 @@ interface CaseDetails {
 interface CaseDetailsContentProps {
   caseDetails: CaseDetails;
   session: Session;
-}
-
-interface SelectedCase {
-    status: string | null;
-    mainTopic: { name: string; } | null;
-    committee: { name: string; } | null;
-    documentGroup: string | null;
-    stortingetId: string;
-  }
+} 
   
 const CaseDetailsContent: React.FC<CaseDetailsContentProps> = ({ caseDetails, session }) => {
   if (!caseDetails.stortingetId) {

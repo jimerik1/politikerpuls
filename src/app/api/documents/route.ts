@@ -3,7 +3,6 @@ import { NextRequest, NextResponse } from 'next/server';
 export async function GET(request: NextRequest) {
   const url = new URL(request.url);
   const documentId = url.searchParams.get('documentId');
-  const format = url.pathname.includes('/xml') ? 'xml' : 'html';
   
   if (!documentId) {
     return new NextResponse('Missing documentId', { status: 400 });
@@ -11,7 +10,7 @@ export async function GET(request: NextRequest) {
 
   try {
     const response = await fetch(
-      `https://data.stortinget.no/eksport/publikasjon?publikasjonid=${documentId}${format === 'html' ? '&format=html' : ''}`
+      `https://data.stortinget.no/eksport/publikasjon?publikasjonid=${documentId}&format=html`
     );
     
     if (!response.ok) {
@@ -22,7 +21,7 @@ export async function GET(request: NextRequest) {
     
     return new NextResponse(content, {
       headers: { 
-        'Content-Type': format === 'xml' ? 'application/xml' : 'text/html',
+        'Content-Type': 'text/html',
       },
     });
   } catch (error) {

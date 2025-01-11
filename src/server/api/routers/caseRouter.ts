@@ -204,10 +204,11 @@ export const caseRouter = createTRPCRouter({
         cursor: z.string().nullish(),
         topicId: z.string().nullish(),
         type: z.string().nullish(),
+        documentGroup: z.string().nullish(), // Add this line
       })
     )
     .query(async ({ ctx, input }) => {
-      const { limit, cursor, topicId, type } = input;
+      const { limit, cursor, topicId, type, documentGroup } = input;
 
       const items = await ctx.db.case.findMany({
         take: limit + 1,
@@ -215,6 +216,7 @@ export const caseRouter = createTRPCRouter({
         where: {
           AND: [
             type ? { type: { equals: type } } : {},
+            documentGroup ? { documentGroup: { equals: documentGroup } } : {}, 
             topicId
               ? {
                   OR: [
