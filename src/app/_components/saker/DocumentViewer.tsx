@@ -24,7 +24,7 @@ const DocumentViewer = ({ htmlContent }: DocumentViewerProps) => {
 
     // Helper function to get text content
     const getText = (element: Element | null): string => {
-      return element?.textContent?.trim() || '';
+      return element?.textContent?.trim() ?? '';
     };
 
     // Helper function to find elements by multiple possible selectors
@@ -63,7 +63,7 @@ const DocumentViewer = ({ htmlContent }: DocumentViewerProps) => {
     const tableElements = findElements(['.strtngt_tbl', '.strtngt_table', 'table']);
     tableElements.forEach(tableContainer => {
       // Find the actual table element
-      const table = tableContainer.querySelector('.strtngt_table') || tableContainer;
+      const table = tableContainer.querySelector('.strtngt_table') ?? tableContainer;
       const headers: string[] = [];
       const rows: string[][] = [];
 
@@ -123,7 +123,7 @@ const DocumentViewer = ({ htmlContent }: DocumentViewerProps) => {
           cellText = cellText.replace(/\s+/g, ' ').trim();
           
           // Handle colspan
-          const colspan = parseInt(cell.getAttribute('colspan') || '1');
+          const colspan = parseInt(cell.getAttribute('colspan') ?? '1');
           for (let i = 0; i < colspan; i++) {
             rowData.push(cellText);
           }
@@ -358,7 +358,7 @@ const DocumentViewer = ({ htmlContent }: DocumentViewerProps) => {
                   <td
                     key={cellIdx}
                     className={`px-6 py-4 whitespace-pre-wrap text-sm text-gray-500 ${
-                      isNumeric || isRightAligned ? 'text-right' : 'text-left'
+                      isNumeric ?? isRightAligned ? 'text-right' : 'text-left'
                     }`}
                   >
                     {cleanCell}
@@ -385,13 +385,13 @@ const DocumentViewer = ({ htmlContent }: DocumentViewerProps) => {
   const renderSection = (section: Section) => {
     switch (section.type) {
       case 'header':
-        return renderHeader(section.content || []);
+        return renderHeader(section.content ?? []);
       case 'content':
-        return renderContent(section.title, section.content || []);
+        return renderContent(section.title, section.content ?? []);
       case 'proposal':
-        return renderProposal(section.title, section.content || []);
+        return renderProposal(section.title, section.content ?? []);
       case 'signature':
-        return renderSignature(section.content || []);
+        return renderSignature(section.content ?? []);
       case 'table':
         return section.tableData ? renderTable(section.tableData) : null;
       default:
