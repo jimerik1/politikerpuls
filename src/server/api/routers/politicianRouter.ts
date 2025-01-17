@@ -48,6 +48,129 @@ export const politicianRouter = createTRPCRouter({
       };
     }),
 
+  // Add these to your existing politicianRouter
+
+  // Get detailed politician info
+  getDetailedPolitician: protectedProcedure
+    .input(z.object({ id: z.string() }))
+    .query(async ({ ctx, input }) => {
+      const politician = await ctx.db.politician.findUnique({
+        where: { id: input.id },
+        include: {
+          party: true,
+          roles: {
+            where: {
+              isActive: true,
+            },
+            orderBy: {
+              startDate: 'desc',
+            },
+          },
+          Biography: {
+            include: {
+              education: {
+                orderBy: {
+                  startYear: 'desc',
+                },
+              },
+              workExperience: {
+                orderBy: {
+                  startYear: 'desc',
+                },
+              },
+              publications: {
+                orderBy: {
+                  year: 'desc',
+                },
+              },
+              awards: {
+                orderBy: {
+                  year: 'desc',
+                },
+              },
+            },
+          },
+          committeeRoles: {
+            where: {
+              endDate: null,
+            },
+            include: {
+              committee: true,
+            },
+          },
+          GovernmentMember: {
+            where: {
+              endDate: null,
+            },
+          },
+        },
+      });
+
+      if (!politician) {
+        throw new Error("Politician not found");
+      }
+
+      return {
+        ...politician,
+        isInGovernment: politician.GovernmentMember.length > 0,
+        governmentRole: politician.GovernmentMember[0]?.title,
+        governmentDepartment: politician.GovernmentMember[0]?.department,
+      };
+    }),
+
+  // Get voting history for a politician
+  getVotingHistory: protectedProcedure
+    .input(z.object({ 
+      id: z.string(),
+      limit: z.number().min(1).max(100).default(20),
+      cursor: z.string().nullish(),
+    }))
+    .query(async ({ ctx, input }) => {
+      const voteRecords = await ctx.db.voteRecord.findMany({
+        where: {
+          politicianId: input.id,
+        },
+        take: input.limit + 1,
+        cursor: input.cursor ? { id: input.cursor } : undefined,
+        orderBy: {
+          votedAt: 'desc',
+        },
+        include: {
+          vote: {
+            include: {
+              case: {
+                select: {
+                  shortTitle: true,
+                  fullTitle: true,
+                  committee: {
+                    select: {
+                      name: true,
+                    },
+                  },
+                },
+              },
+              partyVoteStats: {
+                include: {
+                  party: true,
+                },
+              },
+            },
+          },
+        },
+      });
+
+      let nextCursor: typeof input.cursor = undefined;
+      if (voteRecords.length > input.limit) {
+        const nextItem = voteRecords.pop();
+        nextCursor = nextItem?.id;
+      }
+
+      return {
+        items: voteRecords,
+        nextCursor,
+      };
+    }),
+
   // Get all politicians with basic info
   getAll: protectedProcedure
   .input(

@@ -73,7 +73,7 @@ const DocumentViewer = ({ htmlContent }: DocumentViewerProps) => {
         // Look for text within nested span with type_halvfet
         const boldSpan = cell.querySelector('.strtngt_uth.type_halvfet');
         let headerText = '';
-        
+
         if (boldSpan) {
           headerText = getText(boldSpan);
         } else {
@@ -85,7 +85,7 @@ const DocumentViewer = ({ htmlContent }: DocumentViewerProps) => {
             headerText = getText(cell);
           }
         }
-        
+
         headerText = headerText.replace(/\s+/g, ' ').trim();
         if (headerText) headers.push(headerText);
       });
@@ -99,16 +99,16 @@ const DocumentViewer = ({ htmlContent }: DocumentViewerProps) => {
         cells.forEach(cell => {
           let cellText = '';
           let isRightAligned = false;
-          
+
           // Find the paragraph element with alignment
           const paragraph = cell.querySelector('.strtngt_a');
           if (paragraph) {
             isRightAligned = paragraph.classList.contains('align_right');
-            
+
             // Check for special formatting classes
             const boldText = paragraph.querySelector('.strtngt_uth.type_halvfet');
             const italicText = paragraph.querySelector('.strtngt_uth.type_kursiv');
-            
+
             if (boldText) {
               cellText = getText(boldText);
             } else if (italicText) {
@@ -121,7 +121,7 @@ const DocumentViewer = ({ htmlContent }: DocumentViewerProps) => {
           }
 
           cellText = cellText.replace(/\s+/g, ' ').trim();
-          
+
           // Handle colspan
           const colspan = parseInt(cell.getAttribute('colspan') ?? '1');
           for (let i = 0; i < colspan; i++) {
@@ -137,9 +137,12 @@ const DocumentViewer = ({ htmlContent }: DocumentViewerProps) => {
       if (headers.length > 0 || rows.length > 0) {
         sections.push({
           type: 'table',
-          content: [],  // Empty array for table type
+          content: [], // Empty array for table type
           tableData: { headers, rows }
         });
+
+        // REMOVE ONLY THE ACTUAL <table> so it doesn’t get parsed again
+        table.parentNode?.removeChild(table);
       }
     });
 
@@ -158,12 +161,12 @@ const DocumentViewer = ({ htmlContent }: DocumentViewerProps) => {
       );
 
       const paragraphs: string[] = [];
-      
+
       // Handle regular paragraphs
       const paraElements = chapter.querySelectorAll(
         'A[Type="Innrykk"], .strtngt_a, p, div[class*="innrykk"]'
       );
-      
+
       paraElements.forEach(para => {
         const text = getText(para);
         if (text) paragraphs.push(text);
@@ -202,16 +205,16 @@ const DocumentViewer = ({ htmlContent }: DocumentViewerProps) => {
       '.strtngt_forslagtilvedtak',
       'div[class*="forslag"]'
     ]);
-    
+
     proposalElements.forEach(proposal => {
       const title = getText(
         proposal.querySelector('Tittel, .title, h1, h2, h3')
       );
-      
+
       // Specifically handle Liste/Pkt structure
       const listItems: string[] = [];
       const listElements = proposal.querySelectorAll('Liste');
-      
+
       listElements.forEach(list => {
         const points = list.querySelectorAll('Pkt');
         points.forEach(point => {
@@ -219,7 +222,7 @@ const DocumentViewer = ({ htmlContent }: DocumentViewerProps) => {
           if (text) listItems.push(text);
         });
       });
-    
+
       // If no list items found, try direct paragraphs
       if (listItems.length === 0) {
         const paragraphs = Array.from(
@@ -227,12 +230,12 @@ const DocumentViewer = ({ htmlContent }: DocumentViewerProps) => {
         )
           .map(el => getText(el))
           .filter(Boolean);
-        
+
         if (paragraphs.length > 0) {
           listItems.push(...paragraphs);
         }
       }
-    
+
       if (listItems.length > 0) {
         sections.push({
           type: 'proposal',
@@ -246,14 +249,14 @@ const DocumentViewer = ({ htmlContent }: DocumentViewerProps) => {
     const signElements = findElements(['Sign', '.strtngt_sign']);
     if (signElements.length > 0) {
       const signData: string[] = [];
-      
+
       // Get date
-      const date = getText(doc.querySelector('Dato, .date'));
+      const date = getText(doc.querySelector('Dato, .date, .strtngt_dato'));
       if (date) signData.push(date);
 
       // Get signatures
       const signatures = Array.from(
-        doc.querySelectorAll('Uth[Type="Halvfet"], .signature, .sign')
+        doc.querySelectorAll('Uth[Type="Halvfet"], .signature, .sign, .strtngt_uth.type_halvfet')
       )
         .map(el => getText(el))
         .filter(Boolean);
@@ -273,6 +276,7 @@ const DocumentViewer = ({ htmlContent }: DocumentViewerProps) => {
     return sections;
   };
 
+  // --- Render helpers ---
   const renderHeader = (content: string[]) => (
     <div className="mb-8 bg-gray-50 p-6 rounded-lg">
       {content.map((text, index) => {
@@ -318,6 +322,7 @@ const DocumentViewer = ({ htmlContent }: DocumentViewerProps) => {
       )}
       <div className="space-y-4">
         {content.map((item, idx) => {
+          // If the item already starts with a digit and a dot, don’t add numbering
           const hasNumber = /^\d+\./.test(item.trim());
           return (
             <p key={idx} className="text-gray-700 leading-relaxed pl-4">
@@ -346,19 +351,21 @@ const DocumentViewer = ({ htmlContent }: DocumentViewerProps) => {
         </thead>
         <tbody className="bg-white divide-y divide-gray-200">
           {tableData.rows.map((row, rowIdx) => (
-            <tr key={rowIdx} className={rowIdx % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
+            <tr
+              key={rowIdx}
+              className={rowIdx % 2 === 0 ? 'bg-white' : 'bg-gray-50'}
+            >
               {row.map((cell, cellIdx) => {
                 // Check if the cell might be numeric (for right alignment)
-                // Check if the cell is numeric or explicitly right-aligned
                 const isNumeric = /^\d+([,. ]\d+)*$/.test(cell.trim());
                 const isRightAligned = cell.endsWith('___RIGHT___');
                 const cleanCell = cell.replace('___RIGHT___', '');
-                
+
                 return (
                   <td
                     key={cellIdx}
                     className={`px-6 py-4 whitespace-pre-wrap text-sm text-gray-500 ${
-                      isNumeric ?? isRightAligned ? 'text-right' : 'text-left'
+                      isNumeric || isRightAligned ? 'text-right' : 'text-left'
                     }`}
                   >
                     {cleanCell}
@@ -401,7 +408,7 @@ const DocumentViewer = ({ htmlContent }: DocumentViewerProps) => {
 
   try {
     const sections = parseDocument(htmlContent);
-    
+
     if (sections.length === 0) {
       return (
         <div className="text-gray-500 italic p-4">
