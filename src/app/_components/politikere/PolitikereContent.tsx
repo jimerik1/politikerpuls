@@ -6,6 +6,7 @@ import { XMarkIcon, UsersIcon, MagnifyingGlassIcon } from "@heroicons/react/24/o
 import { DrawerSection, DrawerList, type DrawerListItem } from "../drawer/Drawer";
 import { api } from "~/trpc/react";
 import { PeriodSelector } from "../PeriodSelector";  // Add this import
+import Link from "next/link"
 
 
 // Updated interface to match Prisma schema
@@ -265,15 +266,12 @@ export default function PolitikereContent({ session }: PolitikereContentProps) {
                           .join(", ")}
                       </td>
                       <td className="whitespace-nowrap px-6 py-4 text-right text-sm font-medium">
-                        <button
-                          onClick={() => {
-                            setSelectedPolitiker(person);
-                            setDrawerOpen(true);
-                          }}
-                          className="text-indigo-600 hover:text-indigo-900"
-                        >
-                          Detaljer
-                        </button>
+                  <Link
+                  href={`/politikere/${person.id}`}
+                  className="text-indigo-600 hover:text-indigo-900"
+                >
+                  Detaljer
+                </Link>
                       </td>
                     </tr>
                   ))}

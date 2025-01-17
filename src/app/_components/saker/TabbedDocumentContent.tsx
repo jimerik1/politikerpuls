@@ -84,6 +84,7 @@ const tabs = [aiTab, ...regularDocs, ...stortingsreferatDocs];
             {loadingContent ? 'Laster...' : 'Last inn dokument'}
           </button>
         ) : (
+            
             <DocumentViewer 
             htmlContent={documentContents[tabId] ?? ''} 
             />
