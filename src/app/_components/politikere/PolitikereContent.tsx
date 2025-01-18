@@ -84,9 +84,9 @@ export default function PolitikereContent({ session }: PolitikereContentProps) {
   useEffect(() => {
     if (searchOpen) {
       const timeoutId = setTimeout(() => {
-        const input = document.querySelector('[role="combobox"]') as HTMLInputElement;
-        input?.focus();
-      }, 50);
+        const input = document.querySelector<HTMLInputElement>('[role="combobox"]')!;
+        input.focus();
+            }, 50);
       return () => clearTimeout(timeoutId);
     }
   }, [searchOpen]);
