@@ -8,7 +8,9 @@ import {
   LogOut as LogOutIcon,
   Newspaper as Newspaper,
   Trophy as Trophy,
-  Tag as Tag
+  Tag as Tag,
+  CircleUser as CircleUserIcon,
+  Users as UsersIcon
 } from "lucide-react";
 import BreadcrumbNav from './BreadcrumbNav';
 
@@ -28,6 +30,14 @@ const DashboardLayout = ({ session, children }: DashboardLayoutProps) => {
         </div>
         
         <nav className="flex-1 space-y-2">
+        <Link 
+          href="/" 
+          className="flex items-center rounded-lg p-2 text-gray-600 hover:bg-gray-100"
+        >
+          <CircleUserIcon className="mr-3 h-5 w-5" />
+          <span>Min Side</span>
+        </Link>
+
           <Link 
             href="/partier" 
             className="flex items-center rounded-lg p-2 text-gray-600 hover:bg-gray-100"
@@ -40,7 +50,7 @@ const DashboardLayout = ({ session, children }: DashboardLayoutProps) => {
             href="/politikere" 
             className="flex items-center rounded-lg p-2 text-gray-600 hover:bg-gray-100"
           >
-            <UserCircleIcon className="mr-3 h-5 w-5" />
+            <UsersIcon className="mr-3 h-5 w-5" />
             <span>Politikere</span>
           </Link>
 

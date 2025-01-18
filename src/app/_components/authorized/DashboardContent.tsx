@@ -1,6 +1,6 @@
 import React from 'react';
 import { type Session } from "next-auth";
-import { LatestPost } from "../post";
+import { Comments } from "../post";
 
 interface StatCardProps {
   title: string;
@@ -125,7 +125,7 @@ const DashboardContent = ({ session }: DashboardContentProps) => {
       <div className="rounded-lg bg-white p-6 shadow">
         <h3 className="mb-4 text-lg font-medium text-gray-900">Your Posts</h3>
         <div className="w-full max-w-lg">
-            <LatestPost stortingetId={''} />
+        <Comments staticId="frontpage" /> 
         </div>
       </div>
     </div>

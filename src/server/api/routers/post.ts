@@ -18,8 +18,10 @@ export const postRouter = createTRPCRouter({
     create: protectedProcedure
     .input(z.object({ 
       name: z.string().min(1),
-      caseId: z.string().optional()  // This will receive stortingetId
-    }))
+      caseId: z.string().optional(),
+      politicianId: z.string().optional(),
+      staticId: z.string().optional(),
+      }))
     .mutation(async ({ ctx, input }) => {
       return ctx.db.post.create({
         data: {
@@ -31,8 +33,22 @@ export const postRouter = createTRPCRouter({
             case: {
               connect: { stortingetId: input.caseId }  // Connect using stortingetId instead of id
             }
-          } : {})
-        },
+          } : {}),
+          ...(input.politicianId
+            ? {
+                politician: {
+                  // politician’s ID is the primary key on your Politician model
+                  connect: { id: input.politicianId },
+                }
+              }
+            : {}),  
+             // 2) Set staticId if present
+             ...(input.staticId
+              ? {
+                  staticId: input.staticId,
+                }
+              : {}),
+            },
       });
     }),
 
@@ -63,7 +79,19 @@ export const postRouter = createTRPCRouter({
       return posts;
     }),
   
-  
+    getByStaticId: publicProcedure
+    .input(z.object({ staticId: z.string() }))
+    .query(({ ctx, input }) => {
+      return ctx.db.post.findMany({
+        where: { staticId: input.staticId },
+        include: {
+          createdBy: {
+            select: { name: true, image: true },
+          },
+        },
+        orderBy: { createdAt: "desc" },
+      });
+    }),
 
   getLatest: protectedProcedure.query(async ({ ctx }) => {
     const post = await ctx.db.post.findFirst({
@@ -74,6 +102,23 @@ export const postRouter = createTRPCRouter({
     return post ?? null;
   }),
 
+  getByPoliticianId: publicProcedure
+    .input(z.object({ politicianId: z.string() }))
+    .query(async ({ ctx, input }) => {
+      return ctx.db.post.findMany({
+        where: {
+          politicianId: input.politicianId,
+        },
+        include: {
+          createdBy: {
+            select: { name: true, image: true },
+          },
+        },
+        orderBy: { createdAt: "desc" },
+      });
+    }),
+
+  
   getSecretMessage: protectedProcedure.query(() => {
     return "you can now see this secret message!";
   }),

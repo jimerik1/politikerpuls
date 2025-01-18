@@ -7,7 +7,26 @@ import { DrawerSection, DrawerList, type DrawerListItem } from "../drawer/Drawer
 import { api } from "~/trpc/react";
 import { PeriodSelector } from "../PeriodSelector";  // Add this import
 import Link from "next/link"
+import { useRouter } from "next/navigation";
+import { UserCircleIcon } from "@heroicons/react/24/solid";
+import { useRef, useEffect } from 'react';
 
+interface SearchPolitician {
+  id: string;
+  firstName: string;
+  lastName: string | null;
+  email: string | null;
+  phone: string | null;
+  image: string | null;
+  voteIndex: number | null;
+  truthIndex: number | null;
+  isInGovernment: boolean;
+  governmentRole?: string;
+  governmentDepartment?: string;
+  party: {
+    name: string;
+  };
+}
 
 // Updated interface to match Prisma schema
 interface Politician {
@@ -39,6 +58,7 @@ interface Politician {
   
 export default function PolitikereContent({ session }: PolitikereContentProps) {
   // States
+  const router = useRouter();
   const [selectedPeriod, setSelectedPeriod] = useState<string>("2021-2025");
   const [query, setQuery] = useState("");
   const [searchOpen, setSearchOpen] = useState(false);
@@ -60,6 +80,17 @@ export default function PolitikereContent({ session }: PolitikereContentProps) {
     { query, limit: 10 },
     { enabled: query.length > 0 }
   );
+
+  useEffect(() => {
+    if (searchOpen) {
+      const timeoutId = setTimeout(() => {
+        const input = document.querySelector('[role="combobox"]') as HTMLInputElement;
+        input?.focus();
+      }, 50);
+      return () => clearTimeout(timeoutId);
+    }
+  }, [searchOpen]);
+
 
   // Helper function for index badges
   const renderIndexBadge = (index: number | null) => {
@@ -292,11 +323,13 @@ export default function PolitikereContent({ session }: PolitikereContentProps) {
 
         <div className="fixed inset-0 overflow-y-auto p-4 sm:p-6 md:p-20">
           <Dialog.Panel className="mx-auto max-w-3xl divide-y divide-gray-100 overflow-hidden rounded-xl bg-white shadow-2xl">
-            <Combobox
-              onChange={(politiker: Politician) => {
-                setSearchOpen(false);
-                setSelectedPolitiker(politiker);
-                setDrawerOpen(true);
+            <Combobox<SearchPolitician | null>
+              value={null}
+              onChange={(value: SearchPolitician | null) => {
+                if (value) {
+                  setSearchOpen(false);
+                  router.push(`/politikere/${value.id}`);
+                }
               }}
             >
               <div className="relative">
@@ -305,88 +338,99 @@ export default function PolitikereContent({ session }: PolitikereContentProps) {
                   aria-hidden="true"
                 />
                 <ComboboxInput
-                  className="h-12 w-full border-0 bg-transparent pl-11 pr-4 text-gray-900 placeholder:text-gray-400 focus:ring-0 sm:text-sm"
+                  as="input"
+                  className="h-12 w-full border-0 bg-transparent pl-11 pr-4 text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-0 sm:text-sm"
                   placeholder="Søk etter politiker..."
                   onChange={(event) => setQuery(event.target.value)}
+                  displayValue={(item: SearchPolitician | null) => 
+                    item ? `${item.firstName} ${item.lastName}` : query
+                  }
                 />
               </div>
 
-              {searchResults && searchResults.length > 0 && (
-                <ComboboxOptions className="max-h-72 scroll-py-2 overflow-y-auto py-2 text-sm text-gray-800">
-                  {searchResults.map((person) => (
-                    <ComboboxOption
-                      key={person.id}
-                      value={person}
-                      className={({ active }) =>
-                        `cursor-default select-none px-4 py-2 ${
-                          active ? "bg-indigo-600 text-white" : ""
-                        }`
-                      }
-                    >
-                      {person.firstName} {person.lastName}
-                    </ComboboxOption>
-                  ))}
-                </ComboboxOptions>
-              )}
+        {searchResults && searchResults.length > 0 && (
+          <ComboboxOptions className="max-h-96 scroll-py-2 overflow-y-auto py-2 text-sm text-gray-800">
+            {searchResults.map((person) => (
+              <ComboboxOption
+                key={person.id}
+                value={person}
+                className={({ active }) =>
+                  `group relative flex cursor-default select-none gap-x-6 p-4 ${
+                    active ? "bg-gray-50" : ""
+                  }`
+                }
+              >
+                {({ active }) => (
+                  <>
+                    <div className="mt-1 flex h-11 w-11 flex-none items-center justify-center overflow-hidden rounded-lg bg-gray-50">
+                      {person.image ? (
+                        <img
+                          src={person.image}
+                          alt={`${person.firstName} ${person.lastName}`}
+                          className="h-full w-full object-cover"
+                        />
+                      ) : (
+                        <UserCircleIcon className="h-9 w-9 text-gray-400" aria-hidden="true" />
+                      )}
+                    </div>
+                    <div className="flex-auto">
+                      <div className="flex items-center gap-x-3">
+                        <h3 className="font-semibold text-gray-900">
+                          {person.firstName} {person.lastName}
+                          <span className="absolute inset-0" />
+                        </h3>
+                        <span className="inline-flex items-center rounded-md bg-gray-50 px-2 py-1 text-xs font-medium text-gray-600 ring-1 ring-inset ring-gray-500/10">
+                          {person.party.name}
+                        </span>
+                      </div>
+                      <div className="mt-1">
+                        {person.isInGovernment && (
+                          <span className="inline-flex items-center rounded-md bg-green-50 px-2 py-1 text-xs font-medium text-green-700 ring-1 ring-inset ring-green-600/20 mr-2">
+                            {person.governmentRole || 'I regjering'}
+                            {person.governmentDepartment && ` - ${person.governmentDepartment}`}
+                          </span>
+                        )}
+                        {person.voteIndex && (
+                          <span className={`inline-flex items-center rounded-md px-2 py-1 text-xs font-medium ring-1 ring-inset ${
+                            person.voteIndex >= 80 
+                              ? 'bg-green-50 text-green-700 ring-green-600/20'
+                              : person.voteIndex >= 60
+                              ? 'bg-yellow-50 text-yellow-700 ring-yellow-600/20'
+                              : 'bg-red-50 text-red-700 ring-red-600/20'
+                          }`}>
+                            {person.voteIndex}% stemmeindeks
+                          </span>
+                        )}
+                      </div>
+                      <p className="mt-1 text-sm text-gray-600">
+                        {person.email || 'Ingen e-post tilgjengelig'}
+                      </p>
+                    </div>
+                  </>
+                )}
+              </ComboboxOption>
+            ))}
+          </ComboboxOptions>
+        )}
 
-              {query && (!searchResults || searchResults.length === 0) && (
-                <div className="px-6 py-14 text-center text-sm sm:px-14">
-                  <UsersIcon
-                    className="mx-auto h-6 w-6 text-gray-400"
-                    aria-hidden="true"
-                  />
-                  <p className="mt-4 font-semibold text-gray-900">
-                    Ingen politikere funnet
-                  </p>
-                  <p className="mt-2 text-gray-500">
-                    Prøv å søke med et annet navn.
-                  </p>
-                </div>
-              )}
-            </Combobox>
-          </Dialog.Panel>
-        </div>
-      </Dialog>
-{/* Drawer */}
-<Dialog 
-        open={drawerOpen} 
-        onClose={() => setDrawerOpen(false)}
-        className="relative z-50"
-      >
-        <DialogBackdrop
-          className="fixed inset-0 bg-gray-500/75"
-        />
-
-        <div className="fixed inset-0 overflow-hidden">
-          <div className="absolute inset-0 overflow-hidden">
-            <div className="pointer-events-none fixed inset-y-0 right-0 flex max-w-full pl-10">
-              <DialogPanel className="pointer-events-auto w-96 transform bg-white">
-                <div className="absolute left-0 top-0 -ml-8 flex pr-2 pt-4 sm:-ml-10 sm:pr-4">
-                  <button
-                    type="button"
-                    className="relative rounded-md text-gray-300 hover:text-white"
-                    onClick={() => setDrawerOpen(false)}
-                  >
-                    <span className="absolute -inset-2.5" />
-                    <span className="sr-only">Lukk panel</span>
-                    <XMarkIcon className="h-6 w-6" aria-hidden="true" />
-                  </button>
-                </div>
-                <div className="h-full overflow-y-auto p-8">
-                  {selectedPolitiker && (
-                    <>
-                      <h2 className="mb-4 text-lg font-medium">
-                        {selectedPolitiker.firstName} {selectedPolitiker.lastName}
-                      </h2>
-                      <DrawerContent politiker={selectedPolitiker} />
-                    </>
-                  )}
-                </div>
-              </DialogPanel>
-            </div>
+        {query && (!searchResults || searchResults.length === 0) && (
+          <div className="px-6 py-14 text-center text-sm sm:px-14">
+            <UsersIcon
+              className="mx-auto h-6 w-6 text-gray-400"
+              aria-hidden="true"
+            />
+            <p className="mt-4 font-semibold text-gray-900">
+              Ingen politikere funnet
+            </p>
+            <p className="mt-2 text-gray-500">
+              Prøv å søk med et annet navn.
+            </p>
           </div>
-        </div>
-      </Dialog>
+        )}
+      </Combobox>
+    </Dialog.Panel>
+  </div>
+</Dialog>
     </div>
   );
 }
