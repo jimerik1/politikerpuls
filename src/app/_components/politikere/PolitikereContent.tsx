@@ -386,7 +386,7 @@ export default function PolitikereContent({ session }: PolitikereContentProps) {
                       <div className="mt-1">
                         {person.isInGovernment && (
                           <span className="inline-flex items-center rounded-md bg-green-50 px-2 py-1 text-xs font-medium text-green-700 ring-1 ring-inset ring-green-600/20 mr-2">
-                            {person.governmentRole || 'I regjering'}
+                            {person.governmentRole ?? 'I regjering'}
                             {person.governmentDepartment && ` - ${person.governmentDepartment}`}
                           </span>
                         )}
@@ -403,7 +403,7 @@ export default function PolitikereContent({ session }: PolitikereContentProps) {
                         )}
                       </div>
                       <p className="mt-1 text-sm text-gray-600">
-                        {person.email || 'Ingen e-post tilgjengelig'}
+                        {person.email ?? 'Ingen e-post tilgjengelig'}
                       </p>
                     </div>
                   </>

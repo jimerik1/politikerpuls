@@ -129,7 +129,7 @@ const TabbedPoliticianContent: React.FC<TabbedPoliticianContentProps> = ({ polit
                   className="rounded-md bg-gray-50 px-4 py-3"
                 >
                   <div className="font-medium">
-                    {item.vote.case.shortTitle || item.vote.case.fullTitle}
+                    {item.vote.case.shortTitle ?? item.vote.case.fullTitle}
                   </div>
                   {item.vote.case.committee && (
                     <div className="mt-1 text-sm text-gray-600">
