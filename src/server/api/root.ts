@@ -7,6 +7,8 @@ import { governmentRouter } from "./routers/governmentRouter";
 import { caseRouter } from "./routers/caseRouter";
 import { topicRouter } from "./routers/topicRouter";
 import { documentRouter } from "./routers/documentationRouter";
+import { userRouter } from "./routers/userRouter";
+
 
 /**
  * This is the primary router for your server.
@@ -21,7 +23,8 @@ export const appRouter = createTRPCRouter({
   government: governmentRouter,
   case: caseRouter,
   topic: topicRouter,
-  document: documentRouter
+  document: documentRouter,
+  user: userRouter
 });
 
 // export type definition of API

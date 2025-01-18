@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { api } from "~/trpc/react";
 import { DrawerSection, DrawerList, type DrawerListItem } from "../drawer/Drawer";
 import Timeline from './Timeline';
-import { LatestPost } from "../post";
+import { Comments } from '../post';
 
 const tabs = [
   { name: 'Info', current: true },
@@ -202,7 +202,7 @@ const DrawerSections: React.FC<DrawerSectionsProps> = ({ selectedCase }) => {
 
         {activeTab === 'Meninger' && (
           <div className="p-4">
-       <LatestPost stortingetId={selectedCase.stortingetId} />
+       <Comments caseId={selectedCase.stortingetId} />
     </div>
         )}
       </div>

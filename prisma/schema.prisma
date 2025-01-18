@@ -23,12 +23,21 @@ model Post {
     createdBy   User      @relation(fields: [createdById], references: [id])
     createdById String
 
-    // Add these lines if they're missing:
+    // Make case optional
     case        Case?     @relation(fields: [caseId], references: [id])
     caseId      String?
 
+    // Add politician relation
+    politician  Politician? @relation(fields: [politicianId], references: [id])
+    politicianId String?
+
+    // Relation to static pages
+    staticId      String?
+
+
     @@index([name])
     @@index([caseId])
+    @@index([politicianId])
 }
 
 
@@ -68,10 +77,12 @@ model User {
     email         String?   @unique
     emailVerified DateTime?
     image         String?
+    openaiApiKey  String?   
     accounts      Account[]
     sessions      Session[]
     posts         Post[]
 }
+
 
 model VerificationToken {
     identifier String
@@ -116,6 +127,7 @@ model Politician {
     @@index([firstName, lastName])
     Biography Biography[]
     GovernmentMember GovernmentMember[]
+    Post Post[]
 }
 
 model PoliticianRole {
