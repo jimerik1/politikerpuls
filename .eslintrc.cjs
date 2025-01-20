@@ -1,18 +1,24 @@
+const path = require('path');
+
 /** @type {import("eslint").Linter.Config} */
 module.exports = {
   parser: "@typescript-eslint/parser",
   parserOptions: {
-    project: "tsconfig.json",  // Changed from true to explicit path
+    project: path.join(__dirname, "tsconfig.json"),
+    tsconfigRootDir: __dirname,
+    sourceType: "module",
   },
-  plugins: [
-    {"@typescript-eslint": require("@typescript-eslint/eslint-plugin")}
-  ],
+  plugins: ["@typescript-eslint"],
   extends: [
     "next/core-web-vitals",
     "plugin:@typescript-eslint/recommended-type-checked",
     "plugin:@typescript-eslint/stylistic-type-checked"
   ],
-  ignorePatterns: ["node_modules", "src/app/_components/tailwindcomponents/*"],
+  ignorePatterns: [
+    "node_modules",
+    "src/app/_components/tailwindcomponents/*",
+    ".eslintrc.cjs"
+  ],
   rules: {
     "@typescript-eslint/array-type": "off",
     "@typescript-eslint/consistent-type-definitions": "off",
@@ -38,5 +44,6 @@ module.exports = {
         }
       }
     ]
-  }
+  },
+  root: true
 };
