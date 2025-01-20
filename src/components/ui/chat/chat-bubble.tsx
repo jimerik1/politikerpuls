@@ -29,8 +29,9 @@ const chatBubbleVariant = cva("flex gap-2 items-end relative group w-full", {
 type ChatBubbleChildProps = {
   variant?: 'received' | 'sent';
   layout?: 'default' | 'ai';
-  [key: string]: any; // Allow for additional props
+  [key: string]: string | undefined;
 };
+
 
 
 
