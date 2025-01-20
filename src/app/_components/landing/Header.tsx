@@ -124,10 +124,10 @@ export const Header: FC = () => {
         <div className="mx-auto max-w-7xl px-6 lg:px-8">
           <div className="mx-auto max-w-2xl text-center">
             <h1 className="text-balance text-5xl font-semibold tracking-tight text-gray-900 sm:text-7xl">
-            Demokrati handler om mer enn valgdagen
+            Demo text header
             </h1>
             <p className="mt-8 text-pretty text-lg font-medium text-gray-500 sm:text-xl/8">
-            Politikernes handlinger påvirker oss alle, men kan være vanskelig å følge med på. Med vår database og AI-analyse kan du undersøke hvordan representantene stemmer, hvem som holder det de lover og om de jobber for deg eller andre spesialinteresser.
+            Some other text describing what this app does.
             </p>
             <div className="mt-10 flex items-center justify-center gap-x-6">
               <a
