@@ -2,7 +2,7 @@
 module.exports = {
   parser: "@typescript-eslint/parser",
   parserOptions: {
-    project: true
+    project: "tsconfig.json",  // Changed from true to explicit path
   },
   plugins: [
     {"@typescript-eslint": require("@typescript-eslint/eslint-plugin")}
