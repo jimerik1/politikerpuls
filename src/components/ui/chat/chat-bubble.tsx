@@ -30,25 +30,28 @@ interface ChatBubbleProps
   extends React.HTMLAttributes<HTMLDivElement>,
     VariantProps<typeof chatBubbleVariant> {}
 
-export const ChatBubble = React.forwardRef<HTMLDivElement, ChatBubbleProps>(
-  ({ className, variant, layout, children, ...props }, ref) => (
-    <div
-      ref={ref}
-      className={cn(chatBubbleVariant({ variant, layout, className }))}
-      {...props}
-    >
-      {React.Children.map(children, (child) =>
-        React.isValidElement(child) && typeof child.type !== "string"
-          ? React.cloneElement(child, {
-              variant,
-              layout,
-            } as React.ComponentProps<typeof child.type>)
-          : child
-      )}
-    </div>
-  )
-);
-ChatBubble.displayName = "ChatBubble";
+    export const ChatBubble = React.forwardRef<HTMLDivElement, ChatBubbleProps>(
+      ({ className, variant, layout, children, ...props }, ref) => (
+        <div
+          ref={ref}
+          className={cn(chatBubbleVariant({ variant, layout, className }))}
+          {...props}
+        >
+          {React.Children.map(children, (child) => {
+            if (React.isValidElement(child) && typeof child.type !== "string") {
+              return React.cloneElement(child, {
+                variant,
+                layout,
+                ...child.props,
+              } as React.ComponentPropsWithoutRef<typeof child.type>)
+            }
+            return child
+          })}
+        </div>
+      )
+    );
+    
+    ChatBubble.displayName = "ChatBubble";
 
 // 2) ChatBubbleAvatar
 export const ChatBubbleAvatar: React.FC<{
