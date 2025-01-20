@@ -26,6 +26,14 @@ const chatBubbleVariant = cva("flex gap-2 items-end relative group w-full", {
   },
 });
 
+type ChatBubbleChildProps = {
+  variant?: 'received' | 'sent';
+  layout?: 'default' | 'ai';
+  [key: string]: any; // Allow for additional props
+};
+
+
+
 interface ChatBubbleProps
   extends React.HTMLAttributes<HTMLDivElement>,
     VariantProps<typeof chatBubbleVariant> {}
@@ -38,19 +46,20 @@ interface ChatBubbleProps
           {...props}
         >
           {React.Children.map(children, (child) => {
-            if (React.isValidElement(child) && typeof child.type !== "string") {
+            if (React.isValidElement(child)) {
+              // Cast the child's props to include our ChatBubbleChildProps
               return React.cloneElement(child, {
                 variant,
                 layout,
-                ...child.props,
-              } as React.ComponentPropsWithoutRef<typeof child.type>)
+                ...(child.props as ChatBubbleChildProps),
+              });
             }
-            return child
+            return child;
           })}
         </div>
       )
     );
-    
+                
     ChatBubble.displayName = "ChatBubble";
 
 // 2) ChatBubbleAvatar
