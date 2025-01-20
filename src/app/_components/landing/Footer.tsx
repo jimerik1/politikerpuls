@@ -1,6 +1,6 @@
 "use client";
 
-import { type FC } from "react";
+import { type FC, type ComponentProps } from "react";
 
 interface NavigationItem {
   name: string;
@@ -8,7 +8,7 @@ interface NavigationItem {
 }
 
 interface SocialItem extends NavigationItem {
-  icon: (props: React.ComponentProps<"svg">) => JSX.Element;
+  icon: (props: ComponentProps<"svg">) => React.ReactElement;  // Changed this line
 }
 
 interface NavigationConfig {
