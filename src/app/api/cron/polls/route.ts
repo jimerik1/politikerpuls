@@ -5,17 +5,21 @@ import { db } from '~/server/db';
 
 const POLL_URL = 'https://www.pollofpolls.no/?cmd=Stortinget&do=visallesnitt';
 
-const PARTY_MAP: { [key: string]: string } = {
-  'Ap': 'A',
-  'H': 'H',
-  'Frp': 'FrP',
-  'SV': 'SV',
-  'Sp': 'Sp',
-  'KrF': 'KrF',
-  'V': 'V',
-  'MDG': 'MDG',
-  'R': 'R'
-};
+const PARTY_MAP = {
+    'Ap': 'A',
+    'H': 'H',
+    'Frp': 'FrP',
+    'SV': 'SV',
+    'Sp': 'Sp',
+    'KrF': 'KrF',
+    'V': 'V',
+    'MDG': 'MDG',
+    'R': 'R'
+  } as const;
+  
+// Define the valid party keys
+type PartyKey = keyof typeof PARTY_MAP;
+type PartyId = typeof PARTY_MAP[PartyKey];
 
 function getMonthNumber(norwegianMonth: string): number {
   const months: { [key: string]: number } = {
@@ -56,81 +60,75 @@ function parsePollDate(dateText: string | null | undefined): string | null {
 }
 
 async function processPollRow(row: Element) {
-  const dateCell = row.querySelector('th')?.textContent;
-  const monthYear = parsePollDate(dateCell);
-  
-  if (!monthYear) {
-    console.error('Could not parse date from row:', dateCell);
-    return null;
-  }
-
-  try {
-    // Check if poll already exists
-    const existingPoll = await db.poll.findUnique({
-      where: { monthYear }
-    });
-
-    if (existingPoll) {
-      console.log(`Poll for ${monthYear} already exists, skipping...`);
+    const dateCell = row.querySelector('th')?.textContent;
+    const monthYear = parsePollDate(dateCell);
+    
+    if (!monthYear) {
+      console.error('Could not parse date from row:', dateCell);
       return null;
     }
-
-    // Create new poll
-    const poll = await db.poll.create({
-      data: { monthYear }
-    });
-
-    // Process each party's results
-    const cells = Array.from(row.querySelectorAll('td'));
-    for (let i = 0; i < cells.length - 1; i++) {
-      const cell = cells[i];
-      const partyAbbrevs = Object.keys(PARTY_MAP);
-      if (i >= partyAbbrevs.length) {
-        console.warn(`No party mapping found for index ${i}`);
-        continue;
-      }
-      const partyAbbr = partyAbbrevs[i];
-      const partyId = PARTY_MAP[partyAbbr];
-      
-      if (!cell || !partyId) {
-        console.warn(`Skipping cell for party ${partyAbbr} - missing data or mapping`);
-        continue;
-      }
-
-      const cellText = cell.textContent?.trim() || '';
-      const matches = cellText.match(/(\d+[,.]?\d*)\s*\((\d+)\)/);
-      
-      if (!matches) {
-        console.warn(`Could not parse poll data from cell: ${cellText}`);
-        continue;
-      }
-
-      const [, percentageStr, mandatesStr] = matches;
-      const percentage = parseFloat(percentageStr.replace(',', '.'));
-      const mandates = parseInt(mandatesStr);
-
-      if (isNaN(percentage) || isNaN(mandates)) {
-        console.warn(`Invalid numbers in poll data: ${cellText}`);
-        continue;
-      }
-
-      await db.pollResult.create({
-        data: {
-          pollId: poll.id,
-          partyId,
-          percentage,
-          mandates
-        }
+  
+    try {
+      // Check if poll already exists
+      const existingPoll = await db.poll.findUnique({
+        where: { monthYear }
       });
+  
+      if (existingPoll) {
+        console.log(`Poll for ${monthYear} already exists, skipping...`);
+        return null;
+      }
+  
+      // Create new poll
+      const poll = await db.poll.create({
+        data: { monthYear }
+      });
+  
+      // Process each party's results
+      const cells = Array.from(row.querySelectorAll('td'));
+      const partyAbbrevs = Object.keys(PARTY_MAP);
+  
+      // Iterate through the party keys directly
+      for (const partyAbbr of partyAbbrevs as PartyKey[]) {
+        const index = partyAbbrevs.indexOf(partyAbbr);
+        if (index >= cells.length - 1) break; // Skip the last cell ("Andre")
+        
+        const cell = cells[index];
+        if (!cell) continue;
+  
+        const cellText = cell.textContent?.trim() || '';
+        const matches = cellText.match(/(\d+[,.]?\d*)\s*\((\d+)\)/);
+        
+        if (!matches || !matches[1] || !matches[2]) {
+          console.warn(`Could not parse poll data from cell: ${cellText}`);
+          continue;
+        }
+  
+        const percentage = parseFloat(matches[1].replace(',', '.'));
+        const mandates = parseInt(matches[2]);
+  
+        if (isNaN(percentage) || isNaN(mandates)) {
+          console.warn(`Invalid numbers in poll data: ${cellText}`);
+          continue;
+        }
+  
+        await db.pollResult.create({
+          data: {
+            pollId: poll.id,
+            partyId: PARTY_MAP[partyAbbr], // TypeScript now knows this is safe
+            percentage,
+            mandates
+          }
+        });
+      }
+  
+      return poll;
+    } catch (error) {
+      console.error(`Error processing poll for ${monthYear}:`, error);
+      return null;
     }
-
-    return poll;
-  } catch (error) {
-    console.error(`Error processing poll for ${monthYear}:`, error);
-    return null;
   }
-}
-
+  
 export async function GET(request: Request) {
   // Verify cron secret
   const authHeader = request.headers.get('authorization');

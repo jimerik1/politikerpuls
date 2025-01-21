@@ -40,7 +40,6 @@
   ],
 "exclude": [
   "node_modules",
-  "src/app/_components/tailwindcomponents",
-  "src/app/api/cron/polls"
+  "src/app/_components/tailwindcomponents"
 ]
 }
