@@ -10,9 +10,6 @@ export const WebPage: FC = () => {
   return (
     <div className="bg-white">
       <Header />
-      <Features />
-      <AIInfo />
-      <Footer />
     </div>
   );
 };

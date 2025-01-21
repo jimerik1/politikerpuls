@@ -25,7 +25,7 @@ interface TabbedComponentProps {
 const TabbedComponent = ({ 
   activeTab = "sak", 
   children 
-}: TabbedComponentProps): JSX.Element => {
+}: TabbedComponentProps): React.ReactElement => {
   const handleSelectChange = (value: string) => {
     const url = new URL(window.location.href);
     url.searchParams.set("tab", value);
