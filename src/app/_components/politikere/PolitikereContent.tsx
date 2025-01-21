@@ -10,6 +10,7 @@ import Link from "next/link"
 import { useRouter } from "next/navigation";
 import { UserCircleIcon } from "@heroicons/react/24/solid";
 import { useRef, useEffect } from 'react';
+import PrefetchLink from "./PrefetchRow";
 
 interface SearchPolitician {
   id: string;
