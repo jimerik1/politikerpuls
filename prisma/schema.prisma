@@ -164,6 +164,7 @@ model Party {
 
     @@index([name])
     GovernmentMember GovernmentMember[]
+    PollResult PollResult[]
 }
 
 model Case {
@@ -559,4 +560,32 @@ model StortingSession {
     updatedAt   DateTime @updatedAt
 
     @@index([startDate, endDate])
+}
+
+model Poll {
+    id          String      @id @default(cuid())
+    monthYear   String      // Format: "YYYY-MM" e.g. "2025-01"
+    results     PollResult[]
+    createdAt   DateTime    @default(now())
+    updatedAt   DateTime    @updatedAt
+
+    @@unique([monthYear])
+    @@index([monthYear])
+}
+
+model PollResult {
+    id          String      @id @default(cuid())
+    pollId      String
+    poll        Poll        @relation(fields: [pollId], references: [id])
+    partyId     String
+    party       Party       @relation(fields: [partyId], references: [id])
+    percentage  Float       // Support decimals for precise percentages
+    mandates    Int         // Number of parliamentary seats
+    
+    createdAt   DateTime    @default(now())
+    updatedAt   DateTime    @updatedAt
+
+    @@unique([pollId, partyId])
+    @@index([pollId])
+    @@index([partyId])
 }
